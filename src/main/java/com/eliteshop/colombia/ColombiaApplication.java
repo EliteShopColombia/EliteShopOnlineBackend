@@ -1,0 +1,13 @@
+package com.eliteshop.colombia;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class ColombiaApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(ColombiaApplication.class, args);
+	}
+
+}
