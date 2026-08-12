@@ -1,0 +1,60 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-create-location-tables
+      author: sparra
+      changes:
+        - createTable:
+            tableName: department
+            columns:
+              - column:
+                  name: id
+                  type: INTEGER
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+                    unique: true
+
+        - createTable:
+            tableName: city
+            columns:
+              - column:
+                  name: id
+                  type: INTEGER
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: department_id
+                  type: INTEGER
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_city_department
+                    referencedTableName: department
+                    referencedColumnNames: id
+
+        - addUniqueConstraint:
+            tableName: city
+            columnNames: name, department_id
+            constraintName: uq_city_name_department
+
+        - sqlFile:
+            path: db/migrations/department.sql
+            encoding: UTF-8
+
+  - changeSet:
+      id: 002-seed-cities
+      author: sparra
+      changes:
+        - sqlFile:
+            path: db/migrations/cities.sql
+            encoding: UTF-8
