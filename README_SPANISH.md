@@ -100,6 +100,40 @@ graph TB
 - **Casos de Uso:** Cada operacion de negocio es una clase de un solo caso de uso (ej: `CustomerSaveUseCase`), garantizando responsabilidad unica.
 - **Sin Filtraciones:** Las preocupaciones de infraestructura (anotaciones JPA, HTTP) nunca aparecen en las capas de dominio o aplicacion.
 
+## Sistema de Notificaciones y Webhooks
+
+El sistema incluye notificaciones asíncronas vía webhooks de Slack, integración con webhooks de Pull Requests de GitHub y una cola de reintentos para notificaciones fallidas.
+
+### Flujo de Webhook de GitHub e Integración con Slack
+
+```mermaid
+sequenceDiagram
+    participant GH as GitHub
+    participant WhCtrl as GitHubWebhookController
+    participant Val as WebhookSignatureValidator
+    participant Map as GitHubPullRequestMapper
+    participant Slack as SlackWebhookAdapter
+    participant DB as SlackMessageJpaRepository
+
+    GH->>WhCtrl: POST /api/v1/webhooks/github
+    WhCtrl->>Val: Validar firma HMAC SHA-256
+    Val-->>WhCtrl: Firma Válida
+    WhCtrl->>Map: toSlackMessage(payload)
+    Map-->>WhCtrl: Texto formateado para Slack
+    WhCtrl->>Slack: sendToChannel("github", message)
+    Slack->>DB: Guardar estado de mensaje (PENDING / SENT)
+```
+
+### Endpoints de Notificaciones y Schedulers
+
+| Método | Endpoint | Descripción |
+|---|---|---|
+| POST | `/api/v1/webhooks/github` | Recibir webhooks de PRs de GitHub |
+| GET | `/api/v1/notifications/test` | Probar notificaciones en canales de Slack |
+
+- **NotificationRetryScheduler:** Verifica periódicamente notificaciones pendientes/fallidas y reintenta su envío a Slack aplicando retroceso exponencial (backoff).
+- **HealthCheckScheduler:** Monitorea la salud del sistema periódicamente.
+
 ### Flujo de una Peticion HTTP
 
 ```mermaid
