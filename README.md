@@ -102,7 +102,48 @@ graph TB
 
 ---
 
-## Seller Module - Flow Diagrams
+## Seller Verification Flow
+
+The system uses facial matching to verify seller identity.
+
+```mermaid
+graph TD
+    A[Seller Uploads Document] -->|MinIO| B(SellerVerificationController)
+    B --> C[VerifySellerUseCase]
+    C --> D[FaceMatcherClient]
+    D --> E[Face Matcher Service]
+    E -->|Confidence Score| D
+    D --> C
+    C -->|Approved/Rejected| F[(Database)]
+```
+
+### Endpoints
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/v1/sellers/{id}/verification/document` | Upload Identity Document |
+| POST | `/api/v1/sellers/{id}/verification/selfie` | Upload Selfie |
+| POST | `/api/v1/sellers/{id}/verification/validate` | Trigger Verification |
+| GET | `/api/v1/sellers/{id}/verification` | Check Status |
+
+## Event-Driven Architecture
+
+The system utilizes Spring Modulith to handle events between modules.
+
+```mermaid
+graph LR
+    A[Order Module] -- OrderCreated --> B[Inventory Module]
+    A -- OrderCreated --> C[Notification Module]
+    B -- StockReserved --> D[Notification Module]
+```
+
+### Key Events
+
+| Event | Origin | Listeners |
+|---|---|---|
+| OrderCreated | Order | Inventory, Notification, Seller |
+| OrderStatusChanged | Order | Notification, Inventory, Seller |
+
 
 ### HTTP Request Flow (Seller)
 
