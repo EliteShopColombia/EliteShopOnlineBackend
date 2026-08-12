@@ -23,7 +23,7 @@ API Backend para **EliteShop Colombia**, una plataforma de comercio electronico 
 
 EliteShop Colombia es una plataforma de comercio electronico colombiana que conecta vendedores y clientes. El backend provee APIs REST para gestionar clientes, vendedores, productos, pedidos, pagos, carritos de compras y resenas de productos. Esta disenado como un monolito modular con limites de dominio claros, permitiendo la evolucion independiente de cada modulo de negocio.
 
-**Estado Actual:** En desarrollo temprano. Los modulos de **Cliente** y **Vendedor** han sido implementados completamente (capas de dominio, aplicacion e infraestructura). El esquema de base de datos define 12 tablas que cubren todo el dominio de negocio, pero los modulos restantes (producto, pedido, carrito, pago) aun no estan implementados en codigo.
+**Estado Actual:** En desarrollo. Los módulos de **Cliente**, **Vendedor**, **Producto** y **Reseña** han sido implementados completamente (capas de dominio, aplicación e infraestructura), junto con la verificación facial de vendedores (Face Matching) mediante MinIO y notificaciones asíncronas vía Slack y webhooks de GitHub.
 
 ---
 
