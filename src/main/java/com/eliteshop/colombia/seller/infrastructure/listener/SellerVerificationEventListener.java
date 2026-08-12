@@ -71,7 +71,7 @@ public class SellerVerificationEventListener {
             event.sellerId(),
             event.confidence() * 100,
             TIME_FORMATTER.format(event.occurredAt()));
-    slackWebhookAdapter.sendToChannel("notifications-test", message);
+    slackWebhookAdapter.sendToChannel("notificaciones", message);
   }
 
   private void sendRejectedNotification(SellerVerificationCompletedEvent event) {
@@ -84,6 +84,6 @@ public class SellerVerificationEventListener {
             event.sellerId(),
             event.message(),
             TIME_FORMATTER.format(event.occurredAt()));
-    slackWebhookAdapter.sendToChannel("notifications-test", message);
+    slackWebhookAdapter.sendToChannel("fraude", message);
   }
 }
