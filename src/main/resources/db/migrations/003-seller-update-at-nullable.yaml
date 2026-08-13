@@ -1,0 +1,12 @@
+databaseChangeLog:
+  - changeSet:
+      id: 003-seller-update-at-nullable
+      author: eliteshop
+      changes:
+        - modifyDataType:
+            tableName: seller
+            columnName: seller_update_at
+            newDataType: TIMESTAMP
+        - dropNotNullConstraint:
+            tableName: seller
+            columnName: seller_update_at

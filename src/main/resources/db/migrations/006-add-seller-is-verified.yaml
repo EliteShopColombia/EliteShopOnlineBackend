@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 006-add-seller-is-verified
+      author: eliteshop
+      changes:
+        - addColumn:
+            tableName: seller
+            columns:
+              - column:
+                  name: seller_is_verified
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false

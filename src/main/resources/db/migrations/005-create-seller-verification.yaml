@@ -1,0 +1,66 @@
+databaseChangeLog:
+  - changeSet:
+      id: 005-create-seller-verification
+      author: eliteshop
+      changes:
+        - createTable:
+            tableName: seller_verification
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: seller_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: verification_type
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+                    defaultValue: FACIAL_MATCH
+              - column:
+                  name: document_type
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+                    defaultValue: CC
+              - column:
+                  name: document_number
+                  type: VARCHAR(20)
+              - column:
+                  name: document_minio_key
+                  type: TEXT
+              - column:
+                  name: selfie_minio_key
+                  type: TEXT
+              - column:
+                  name: status
+                  type: VARCHAR(30)
+                  constraints:
+                    nullable: false
+                    defaultValue: PENDING
+              - column:
+                  name: confidence_score
+                  type: DECIMAL(3,2)
+              - column:
+                  name: rejection_reason
+                  type: TEXT
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+        - addForeignKeyConstraint:
+            baseTableName: seller_verification
+            baseColumnNames: seller_id
+            referencedTableName: seller
+            referencedColumnNames: seller_id
+            constraintName: fk_seller_verification_seller
