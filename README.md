@@ -102,6 +102,40 @@ graph TB
 
 ---
 
+## Notification & Webhooks System
+
+The system includes asynchronous notifications via Slack webhooks, GitHub PR webhook integration, and a retry queue for failed notifications.
+
+### GitHub Webhook & Slack Integration Flow
+
+```mermaid
+sequenceDiagram
+    participant GH as GitHub
+    participant WhCtrl as GitHubWebhookController
+    participant Val as WebhookSignatureValidator
+    participant Map as GitHubPullRequestMapper
+    participant Slack as SlackWebhookAdapter
+    participant DB as SlackMessageJpaRepository
+
+    GH->>WhCtrl: POST /api/v1/webhooks/github
+    WhCtrl->>Val: Validate HMAC SHA-256 Signature
+    Val-->>WhCtrl: Signature Valid
+    WhCtrl->>Map: toSlackMessage(payload)
+    Map-->>WhCtrl: Formatted Slack Message text
+    WhCtrl->>Slack: sendToChannel("github", message)
+    Slack->>DB: Save message status (PENDING / SENT)
+```
+
+### Notification Endpoints & Schedulers
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/v1/webhooks/github` | Receive GitHub PR Webhooks |
+| GET | `/api/v1/notifications/test` | Test Slack channel notifications |
+
+- **NotificationRetryScheduler:** Periodically checks for failed/pending notifications and retries sending them to Slack based on configured exponential backoff.
+- **HealthCheckScheduler:** Monitors system health and reports status.
+
 ## Seller Verification Flow
 
 The system uses facial matching to verify seller identity.
