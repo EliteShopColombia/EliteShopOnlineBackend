@@ -1,0 +1,499 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1723130000000-1
+      author: sparra
+      changes:
+        # 1. CUSTOMER
+        - createTable:
+            tableName: customer
+            columns:
+              - column:
+                  name: customer_id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: customer_first_name
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: customer_last_name
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: customer_email
+                  type: VARCHAR(150)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: customer_phone_number
+                  type: VARCHAR(15)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: customer_password
+                  type: VARCHAR(150)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: customer_profile_image
+                  type: TEXT
+              - column:
+                  name: customer_created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: customer_update_at
+                  type: TIMESTAMP
+
+        # 2. CUSTOMER_INFO
+        - createTable:
+            tableName: customer_info
+            columns:
+              - column:
+                  name: customer_id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+                    foreignKeyName: fk_customer_customer_info
+                    referencedTableName: customer
+                    referencedColumnNames: customer_id
+              - column:
+                  name: customer_dni_type
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: customer_dni_number
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: customer_address
+                  type: VARCHAR(150)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: customer_department
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: customer_city
+                  type: VARCHAR(60)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: customer_dni_created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: customer_dni_update_at
+                  type: TIMESTAMP
+
+        # 3. SELLER
+        - createTable:
+            tableName: seller
+            columns:
+              - column:
+                  name: seller_id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: seller_type_trade
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: seller_type_dni
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: seller_dni_number
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: seller_trade_name
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: seller_fullname
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: seller_is_active
+                  type: BOOLEAN
+                  constraints:
+                    nullable: false
+              - column:
+                  name: seller_created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: seller_update_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+
+        # 4. SELLER_CONTACT
+        - createTable:
+            tableName: seller_contact
+            columns:
+              - column:
+                  name: seller_id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+                    foreignKeyName: fk_seller_seller_contact
+                    referencedTableName: seller
+                    referencedColumnNames: seller_id
+              - column:
+                  name: seller_email
+                  type: VARCHAR(150)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: seller_phone_number
+                  type: VARCHAR(15)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: seller_trade_address
+                  type: VARCHAR(150)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: seller_trade_department
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: seller_trade_city
+                  type: VARCHAR(60)
+                  constraints:
+                    nullable: false
+
+        # 5. SELLER_BANK_INFO
+        - createTable:
+            tableName: seller_bank_info
+            columns:
+              - column:
+                  name: seller_id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+                    foreignKeyName: fk_seller_seller_bank
+                    referencedTableName: seller
+                    referencedColumnNames: seller_id
+              - column:
+                  name: bank_name
+                  type: VARCHAR(150)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: type_account
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: number_account
+                  type: VARCHAR(30)
+                  constraints:
+                    nullable: false
+
+        # 6. PRODUCT
+        - createTable:
+            tableName: product
+            columns:
+              - column:
+                  name: product_id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: seller_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_seller_product
+                    referencedTableName: seller
+                    referencedColumnNames: seller_id
+              - column:
+                  name: product_name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: product_price
+                  type: DECIMAL(12, 2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: product_stock
+                  type: INTEGER
+                  constraints:
+                    nullable: false
+
+        # 7. PRODUCT_REVIEW
+        - createTable:
+            tableName: product_review
+            columns:
+              - column:
+                  name: review_id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: product_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_product_product_review
+                    referencedTableName: product
+                    referencedColumnNames: product_id
+              - column:
+                  name: customer_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_customer_product_review
+                    referencedTableName: customer
+                    referencedColumnNames: customer_id
+              - column:
+                  name: product_qualify
+                  type: INTEGER
+              - column:
+                  name: product_review_content
+                  type: VARCHAR(255)
+              - column:
+                  name: product_review_image
+                  type: TEXT
+
+        # 8. ORDERS (Uso 'orders' para evitar palabra reservada 'ORDER')
+        - createTable:
+            tableName: orders
+            columns:
+              - column:
+                  name: order_id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: customer_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_customer_orders
+                    referencedTableName: customer
+                    referencedColumnNames: customer_id
+              - column:
+                  name: order_status
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: total_amount
+                  type: DECIMAL(12, 2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: shipping_address
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: shipping_department
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: shipping_city
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+
+        # 9. ORDER_ITEM
+        - createTable:
+            tableName: order_item
+            columns:
+              - column:
+                  name: order_item_id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: orders_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_orders_order_item
+                    referencedTableName: orders
+                    referencedColumnNames: order_id
+              - column:
+                  name: product_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_product_order_item
+                    referencedTableName: product
+                    referencedColumnNames: product_id
+              - column:
+                  name: seller_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_seller_order_item
+                    referencedTableName: seller
+                    referencedColumnNames: seller_id
+              - column:
+                  name: unit_price
+                  type: DECIMAL(12, 2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: quantity
+                  type: INTEGER
+                  constraints:
+                    nullable: false
+              - column:
+                  name: item_status
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+
+        # 10. PAYMENT_INFO
+        - createTable:
+            tableName: payment_info
+            columns:
+              - column:
+                  name: payment_id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: order_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_orders_payment_info
+                    referencedTableName: orders
+                    referencedColumnNames: order_id
+              - column:
+                  name: payment_method
+                  type: VARCHAR(150)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: transaction_id
+                  type: VARCHAR(255)
+                  remarks: "Retornado por pasarela de pagos"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: payment_status
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: paid_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+
+        # 11. CART
+        - createTable:
+            tableName: cart
+            columns:
+              - column:
+                  name: cart_id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: customer_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    unique: true
+                    foreignKeyName: fk_customer_cart
+                    referencedTableName: customer
+                    referencedColumnNames: customer_id
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+
+        # 12. CART_ITEM
+        - createTable:
+            tableName: cart_item
+            columns:
+              - column:
+                  name: cart_item_id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: cart_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_cart_cart_item
+                    referencedTableName: cart
+                    referencedColumnNames: cart_id
+              - column:
+                  name: product_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_product_cart_item
+                    referencedTableName: product
+                    referencedColumnNames: product_id
+              - column:
+                  name: quantity
+                  type: INTEGER
+                  constraints:
+                    nullable: false
+              - column:
+                  name: added_at
+                  type: TIMESTAMP
+
+        # Índice Único Compuesto (cart_id + product_id)
+        - addUniqueConstraint:
+            tableName: cart_item
+            columnNames: cart_id, product_id
+            constraintName: uq_cart_item_cart_product
