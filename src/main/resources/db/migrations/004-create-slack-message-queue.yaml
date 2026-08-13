@@ -1,0 +1,49 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004-create-slack-message-queue
+      author: eliteshop
+      changes:
+        - createTable:
+            tableName: slack_message_queue
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: channel
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: text
+                  type: TEXT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: retry_count
+                  type: INTEGER
+                  constraints:
+                    nullable: false
+                    defaultValueNumeric: 0
+              - column:
+                  name: max_retries
+                  type: INTEGER
+                  constraints:
+                    nullable: false
+                    defaultValueNumeric: 5
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: next_retry_at
+                  type: TIMESTAMP

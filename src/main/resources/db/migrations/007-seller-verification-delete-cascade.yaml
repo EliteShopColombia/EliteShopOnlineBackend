@@ -1,0 +1,15 @@
+databaseChangeLog:
+  - changeSet:
+      id: 007-seller-verification-delete-cascade
+      author: eliteshop
+      changes:
+        - dropForeignKeyConstraint:
+            baseTableName: seller_verification
+            constraintName: fk_seller_verification_seller
+        - addForeignKeyConstraint:
+            baseTableName: seller_verification
+            baseColumnNames: seller_id
+            referencedTableName: seller
+            referencedColumnNames: seller_id
+            constraintName: fk_seller_verification_seller
+            onDelete: CASCADE

@@ -1,0 +1,15 @@
+databaseChangeLog:
+  - include:
+      file: db/migrations/001-create-initial-tables.yaml
+  - include:
+      file: db/migrations/002-create-location-tables.yaml
+  - include:
+      file: db/migrations/003-seller-update-at-nullable.yaml
+  - include:
+      file: db/migrations/004-create-slack-message-queue.yaml
+  - include:
+      file: db/migrations/005-create-seller-verification.yaml
+  - include:
+      file: db/migrations/006-add-seller-is-verified.yaml
+  - include:
+      file: db/migrations/007-seller-verification-delete-cascade.yaml
