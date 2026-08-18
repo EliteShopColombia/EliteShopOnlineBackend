@@ -6,5 +6,5 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Getter
 public class SellerVerificationConfidenceScore {
-    private final Double value;
+  private final Double value;
 }

@@ -5,7 +5,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 
 @ResponseStatus(value = HttpStatus.BAD_REQUEST)
 public class SellerInvalidNumberAccountException extends RuntimeException {
-    public SellerInvalidNumberAccountException(String message) {
-        super(message);
-    }
+  public SellerInvalidNumberAccountException(String message) {
+    super(message);
+  }
 }

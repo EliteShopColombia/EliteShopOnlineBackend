@@ -66,4 +66,9 @@ public class CustomerPostgresAdapter implements CustomerRepository {
   public Optional<Customer> findById(CustomerId id) {
     return jpaRepository.findById(id.getValue()).map(mapper::toDomain);
   }
+
+  @Override
+  public Optional<Customer> findByEmail(String email) {
+    return jpaRepository.findByEmail(email).map(mapper::toDomain);
+  }
 }

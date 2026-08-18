@@ -6,5 +6,5 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Getter
 public class SellerVerificationDocumentType {
-    private final String value;
+  private final String value;
 }

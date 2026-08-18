@@ -20,11 +20,12 @@ public class SellerVerificationBeanConfiguration {
 
   @Bean
   public VerifySellerUseCase verifySellerUseCase(
-          SellerVerificationRepository repository,
-          SellerRepository sellerRepository,
-          MinIOAdapter minIOAdapter,
-          FaceMatcherAdapter faceMatcherAdapter,
-          ApplicationEventPublisher eventPublisher) {
-    return new VerifySellerUseCase(repository, sellerRepository, minIOAdapter, faceMatcherAdapter, eventPublisher);
+      SellerVerificationRepository repository,
+      SellerRepository sellerRepository,
+      MinIOAdapter minIOAdapter,
+      FaceMatcherAdapter faceMatcherAdapter,
+      ApplicationEventPublisher eventPublisher) {
+    return new VerifySellerUseCase(
+        repository, sellerRepository, minIOAdapter, faceMatcherAdapter, eventPublisher);
   }
 }

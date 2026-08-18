@@ -12,49 +12,43 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class MinIOAdapter {
 
-    private final MinioClient minioClient;
+  private final MinioClient minioClient;
 
-    @Value("${minio.bucket}")
-    private String bucket;
+  @Value("${minio.bucket.verification-sellers:eliteshop-sellers}")
+  private String bucket;
 
-    public String uploadDocument(String sellerId, String filename, InputStream stream) {
-        String objectKey = "sellers/" + sellerId + "/document.jpg";
-        try {
-            minioClient.putObject(
-                    PutObjectArgs.builder()
-                            .bucket(bucket)
-                            .object(objectKey)
-                            .stream(stream, -1, 10485760)
-                            .contentType("image/jpeg")
-                            .build());
-        } catch (Exception e) {
-            throw new RuntimeException("Error subiendo documento a MinIO", e);
-        }
-        return objectKey;
+  public String uploadDocument(String sellerId, String filename, InputStream stream) {
+    String objectKey = "sellers/" + sellerId + "/document.jpg";
+    try {
+      minioClient.putObject(
+          PutObjectArgs.builder().bucket(bucket).object(objectKey).stream(stream, -1, 10485760)
+              .contentType("image/jpeg")
+              .build());
+    } catch (Exception e) {
+      throw new RuntimeException("Error subiendo documento a MinIO", e);
     }
+    return objectKey;
+  }
 
-    public String uploadSelfie(String sellerId, String filename, InputStream stream) {
-        String objectKey = "sellers/" + sellerId + "/selfie.jpg";
-        try {
-            minioClient.putObject(
-                    PutObjectArgs.builder()
-                            .bucket(bucket)
-                            .object(objectKey)
-                            .stream(stream, -1, 10485760)
-                            .contentType("image/jpeg")
-                            .build());
-        } catch (Exception e) {
-            throw new RuntimeException("Error subiendo selfie a MinIO", e);
-        }
-        return objectKey;
+  public String uploadSelfie(String sellerId, String filename, InputStream stream) {
+    String objectKey = "sellers/" + sellerId + "/selfie.jpg";
+    try {
+      minioClient.putObject(
+          PutObjectArgs.builder().bucket(bucket).object(objectKey).stream(stream, -1, 10485760)
+              .contentType("image/jpeg")
+              .build());
+    } catch (Exception e) {
+      throw new RuntimeException("Error subiendo selfie a MinIO", e);
     }
+    return objectKey;
+  }
 
-    public InputStream downloadImage(String objectKey) {
-        try {
-            return minioClient.getObject(
-                    GetObjectArgs.builder().bucket(bucket).object(objectKey).build());
-        } catch (Exception e) {
-            throw new RuntimeException("Error descargando imagen de MinIO", e);
-        }
+  public InputStream downloadImage(String objectKey) {
+    try {
+      return minioClient.getObject(
+          GetObjectArgs.builder().bucket(bucket).object(objectKey).build());
+    } catch (Exception e) {
+      throw new RuntimeException("Error descargando imagen de MinIO", e);
     }
+  }
 }

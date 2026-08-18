@@ -20,6 +20,7 @@ import com.eliteshop.colombia.customer.domain.model.CustomerProfileImage;
 import com.eliteshop.colombia.customer.domain.model.CustomerUpdatedAt;
 import com.eliteshop.colombia.customer.infrastructure.controller.dto.CustomerRequest;
 import com.eliteshop.colombia.customer.infrastructure.controller.dto.CustomerResponse;
+import com.eliteshop.colombia.customer.infrastructure.controller.dto.UpdateCustomerRequest;
 import com.eliteshop.colombia.customer.infrastructure.persistence.CustomerEntity;
 import com.eliteshop.colombia.customer.infrastructure.persistence.CustomerInfoEntity;
 import java.sql.Timestamp;
@@ -125,6 +126,37 @@ public class CustomerMapper {
             ? new CustomerProfileImage(request.getProfileImage())
             : null,
         new CustomerCreatedAt(Timestamp.from(Instant.now())),
+        null,
+        info);
+  }
+
+  public Customer toDomainFromUpdateRequest(UUID id, UpdateCustomerRequest request) {
+    if (request == null) {
+      return null;
+    }
+    CustomerInfo info = null;
+    if (request.getDniType() != null) {
+      info =
+          new CustomerInfo(
+              new CustomerDniType(request.getDniType()),
+              new CustomerDniNumber(request.getDniNumber()),
+              new CustomerAddress(request.getAddress()),
+              new CustomerDepartment(request.getDepartment()),
+              new CustomerCity(request.getCity()),
+              new CustomerDniCreatedAt(Timestamp.from(Instant.now())),
+              null);
+    }
+    return new Customer(
+        new CustomerId(id),
+        new CustomerFirstName(request.getFirstName()),
+        new CustomerLastName(request.getLastName()),
+        null,
+        new CustomerPhoneNumber(request.getPhoneNumber()),
+        null,
+        request.getProfileImage() != null
+            ? new CustomerProfileImage(request.getProfileImage())
+            : null,
+        null,
         null,
         info);
   }

@@ -1,34 +1,70 @@
-HELP.md
+# ===========================================
+# EliteShop Colombia Backend - .gitignore
+# ===========================================
+
+# ---------- Build ----------
 target/
-.mvn/wrapper/maven-wrapper.jar
+build/
 !**/src/main/**/target/
 !**/src/test/**/target/
+!**/src/main/**/build/
+!**/src/test/**/build/
 
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
+# ---------- Maven ----------
+.mvn/wrapper/maven-wrapper.jar
+.mvn/wrapper/maven-wrapper.properties
+mvnw.cmd
 
-### IntelliJ IDEA ###
-.idea
+# ---------- IDE: IntelliJ ----------
+.idea/
 *.iws
 *.iml
 *.ipr
 
-### NetBeans ###
+# ---------- IDE: Eclipse/STS ----------
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache
+
+# ---------- IDE: NetBeans ----------
 /nbproject/private/
 /nbbuild/
 /dist/
 /nbdist/
 /.nb-gradle/
-build/
-!**/src/main/**/build/
-!**/src/test/**/build/
 
-### VS Code ###
+# ---------- IDE: VS Code ----------
 .vscode/
+
+# ---------- Logs ----------
+*.log
+logs/
+hs_err_pid*
+replay_pid*
+
+# ---------- OS ----------
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---------- Environment / Secrets ----------
+.env
+.env.*
+*.env
+application-local.yml
+application-local.properties
+**/config-server-secrets/
+
+# ---------- Generated / Local docs ----------
+HELP.md
+INTEGRATION.md
 docs/
+graphify-out/
+
+# ---------- Test ----------
+*.h2.db
+*.mv.db

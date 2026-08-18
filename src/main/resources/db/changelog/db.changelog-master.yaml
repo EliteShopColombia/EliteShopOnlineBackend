@@ -13,3 +13,5 @@ databaseChangeLog:
       file: db/migrations/006-add-seller-is-verified.yaml
   - include:
       file: db/migrations/007-seller-verification-delete-cascade.yaml
+  - include:
+      file: db/migrations/009-create-product-review-image-tables.yaml

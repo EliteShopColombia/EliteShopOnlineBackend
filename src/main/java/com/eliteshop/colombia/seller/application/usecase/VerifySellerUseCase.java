@@ -26,19 +26,19 @@ public class VerifySellerUseCase {
     String objectKey = minIOAdapter.uploadDocument(sellerId.toString(), filename, stream);
 
     Seller seller =
-            sellerRepository
-                    .findById(new SellerId(sellerId))
-                    .orElseThrow(() -> new RuntimeException("Vendedor no encontrado"));
+        sellerRepository
+            .findById(new SellerId(sellerId))
+            .orElseThrow(() -> new RuntimeException("Vendedor no encontrado"));
 
     SellerVerification verification =
-            repository
-                    .findBySellerId(sellerId)
-                    .orElseGet(() -> SellerVerification.create(new SellerVerificationSellerId(sellerId)));
+        repository
+            .findBySellerId(sellerId)
+            .orElseGet(() -> SellerVerification.create(new SellerVerificationSellerId(sellerId)));
 
-    verification = verification.withDocumentUploaded(
+    verification =
+        verification.withDocumentUploaded(
             new SellerVerificationDocumentMinioKey(objectKey),
-            new SellerVerificationDocumentNumber(seller.getDniNumber().getValue())
-    );
+            new SellerVerificationDocumentNumber(seller.getDniNumber().getValue()));
     return repository.save(verification);
   }
 
@@ -46,20 +46,19 @@ public class VerifySellerUseCase {
     String objectKey = minIOAdapter.uploadSelfie(sellerId.toString(), filename, stream);
 
     SellerVerification verification =
-            repository
-                    .findBySellerId(sellerId)
-                    .orElseThrow(() -> new RuntimeException("Sube la cedula primero"));
+        repository
+            .findBySellerId(sellerId)
+            .orElseThrow(() -> new RuntimeException("Sube la cedula primero"));
 
-    verification = verification.withSelfieUploaded(
-            new SellerVerificationSelfieMinioKey(objectKey));
+    verification = verification.withSelfieUploaded(new SellerVerificationSelfieMinioKey(objectKey));
     return repository.save(verification);
   }
 
   public SellerVerification validate(UUID sellerId) {
     SellerVerification verification =
-            repository
-                    .findBySellerId(sellerId)
-                    .orElseThrow(() -> new RuntimeException("No hay verificacion pendiente"));
+        repository
+            .findBySellerId(sellerId)
+            .orElseThrow(() -> new RuntimeException("No hay verificacion pendiente"));
 
     if (!"SELFIE_UPLOADED".equals(verification.getStatus().getValue())) {
       throw new RuntimeException("Primero sube la cedula y la selfie");
@@ -68,34 +67,30 @@ public class VerifySellerUseCase {
     String selfieObject = verification.getSelfieMinioKey().getValue();
     String documentObject = verification.getDocumentMinioKey().getValue();
 
-    FaceMatcherAdapter.FaceMatchResult result = faceMatcherAdapter.match(selfieObject, documentObject);
+    FaceMatcherAdapter.FaceMatchResult result =
+        faceMatcherAdapter.match(selfieObject, documentObject);
 
     boolean isApproved = result.match() && result.confidence() >= 0.6;
 
     if (isApproved) {
       verification =
-              verification.approved(new SellerVerificationConfidenceScore(result.confidence()));
+          verification.approved(new SellerVerificationConfidenceScore(result.confidence()));
     } else {
-      verification =
-              verification.rejected(new SellerVerificationRejectionReason(result.message()));
+      verification = verification.rejected(new SellerVerificationRejectionReason(result.message()));
     }
 
     SellerVerification savedVerification = repository.save(verification);
 
     eventPublisher.publishEvent(
-            new SellerVerificationCompletedEvent(
-                    sellerId,
-                    isApproved,
-                    result.confidence(),
-                    result.message(),
-                    Instant.now()));
+        new SellerVerificationCompletedEvent(
+            sellerId, isApproved, result.confidence(), result.message(), Instant.now()));
 
     return savedVerification;
   }
 
   public SellerVerification getStatus(UUID sellerId) {
     return repository
-            .findBySellerId(sellerId)
-            .orElseThrow(() -> new RuntimeException("No hay verificacion para este vendedor"));
+        .findBySellerId(sellerId)
+        .orElseThrow(() -> new RuntimeException("No hay verificacion para este vendedor"));
   }
 }

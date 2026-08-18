@@ -3,7 +3,6 @@ package com.eliteshop.colombia.customer.infrastructure.config;
 import com.eliteshop.colombia.customer.application.CustomerDeleteUseCase;
 import com.eliteshop.colombia.customer.application.CustomerFindAllUseCase;
 import com.eliteshop.colombia.customer.application.CustomerFindByIdUseCase;
-import com.eliteshop.colombia.customer.application.CustomerSaveUseCase;
 import com.eliteshop.colombia.customer.application.CustomerUpdateUseCase;
 import com.eliteshop.colombia.customer.domain.repository.CustomerRepository;
 import org.springframework.context.annotation.Bean;
@@ -11,11 +10,6 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class CustomerBeanConfiguration {
-
-  @Bean
-  public CustomerSaveUseCase customerSaveUseCase(CustomerRepository repository) {
-    return new CustomerSaveUseCase(repository);
-  }
 
   @Bean
   public CustomerUpdateUseCase customerUpdateUseCase(CustomerRepository repository) {

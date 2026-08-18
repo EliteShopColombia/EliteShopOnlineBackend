@@ -68,9 +68,7 @@ public class SellerVerificationEventListener {
                 + "• ID: `%s`\n"
                 + "• Confianza: %.0f%%\n"
                 + "• Hora: %s",
-            event.sellerId(),
-            event.confidence() * 100,
-            TIME_FORMATTER.format(event.occurredAt()));
+            event.sellerId(), event.confidence() * 100, TIME_FORMATTER.format(event.occurredAt()));
     slackWebhookAdapter.sendToChannel("notificaciones-test", message);
   }
 
@@ -81,9 +79,7 @@ public class SellerVerificationEventListener {
                 + "• ID Vendedor: `%s`\n"
                 + "• Razon: %s\n"
                 + "• Hora: %s",
-            event.sellerId(),
-            event.message(),
-            TIME_FORMATTER.format(event.occurredAt()));
+            event.sellerId(), event.message(), TIME_FORMATTER.format(event.occurredAt()));
     slackWebhookAdapter.sendToChannel("notificaciones-test", message);
   }
 }

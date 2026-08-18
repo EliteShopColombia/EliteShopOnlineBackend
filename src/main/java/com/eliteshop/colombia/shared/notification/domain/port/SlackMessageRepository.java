@@ -6,11 +6,11 @@ import java.util.List;
 
 public interface SlackMessageRepository {
 
-    SlackMessage save(SlackMessage message);
+  SlackMessage save(SlackMessage message);
 
-    void updateStatus(SlackMessageId id, String status);
+  void updateStatus(SlackMessageId id, String status);
 
-    void incrementRetryCount(SlackMessageId id, String nextRetryAt);
+  void incrementRetryCount(SlackMessageId id, String nextRetryAt);
 
-    List<SlackMessage> findByStatus(String status);
+  List<SlackMessage> findByStatus(String status);
 }

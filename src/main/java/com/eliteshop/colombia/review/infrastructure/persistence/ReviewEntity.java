@@ -29,7 +29,4 @@ public class ReviewEntity {
 
   @Column(name = "product_review_content", nullable = true, length = 255)
   private String content;
-
-  @Column(name = "product_review_image", nullable = true, columnDefinition = "TEXT")
-  private String image;
 }

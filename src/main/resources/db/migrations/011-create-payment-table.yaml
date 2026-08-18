@@ -1,0 +1,98 @@
+databaseChangeLog:
+  - changeSet:
+      id: 011-create-payment-table
+      author: eliteshop
+      changes:
+        - createTable:
+            tableName: payment_info
+            columns:
+              - column:
+                  name: payment_id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: order_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: seller_id
+                  type: uuid
+                  constraints:
+                    nullable: true
+              - column:
+                  name: amount
+                  type: decimal(15,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: currency
+                  type: varchar(3)
+                  defaultValue: COP
+              - column:
+                  name: payment_method
+                  type: varchar(50)
+              - column:
+                  name: payment_status
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: epayco_ref_id
+                  type: varchar(255)
+              - column:
+                  name: session_id
+                  type: varchar(255)
+              - column:
+                  name: invoice
+                  type: varchar(255)
+                  constraints:
+                    unique: true
+              - column:
+                  name: customer_email
+                  type: varchar(255)
+              - column:
+                  name: platform_fee
+                  type: decimal(15,2)
+              - column:
+                  name: seller_amount
+                  type: decimal(15,2)
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+        - addUniqueConstraint:
+            tableName: payment_info
+            columnNames: session_id
+        - addUniqueConstraint:
+            tableName: payment_info
+            columnNames: epayco_ref_id
+        - createIndex:
+            indexName: idx_payment_epayco_ref_id
+            tableName: payment_info
+            columns:
+              - column:
+                  name: epayco_ref_id
+        - createIndex:
+            indexName: idx_payment_session_id
+            tableName: payment_info
+            columns:
+              - column:
+                  name: session_id
+        - createIndex:
+            indexName: idx_payment_order_id
+            tableName: payment_info
+            columns:
+              - column:
+                  name: order_id
+        - createIndex:
+            indexName: idx_payment_customer_email
+            tableName: payment_info
+            columns:
+              - column:
+                  name: customer_email
