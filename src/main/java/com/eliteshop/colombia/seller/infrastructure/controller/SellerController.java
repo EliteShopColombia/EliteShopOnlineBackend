@@ -1,5 +1,8 @@
 package com.eliteshop.colombia.seller.infrastructure.controller;
 
+import com.eliteshop.colombia.auth.infrastructure.config.JwtService;
+import com.eliteshop.colombia.auth.infrastructure.controller.dto.AuthResponse;
+import com.eliteshop.colombia.customer.domain.repository.CustomerRepository;
 import com.eliteshop.colombia.seller.application.usecase.*;
 import com.eliteshop.colombia.seller.domain.model.Seller;
 import com.eliteshop.colombia.seller.domain.model.SellerId;
@@ -30,12 +33,33 @@ public class SellerController {
   private final SellerFindContactBySellerIdUseCase findContactBySellerIdUseCase;
   private final SellerFindBankInfoBySellerIdUseCase findBankInfoBySellerIdUseCase;
   private final SellerMapper mapper;
+  private final JwtService jwtService;
+  private final CustomerRepository customerRepository;
 
   @PostMapping("/sellers")
-  public ResponseEntity<SellerResponse> save(@Valid @RequestBody SellerRequest request) {
+  public ResponseEntity<AuthResponse> save(@Valid @RequestBody SellerRequest request) {
     Seller seller = mapper.toDomainFromRequest(request);
     saveUseCase.execute(seller);
-    return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toResponse(seller));
+
+    String email = seller.getContact().getEmail().getValue();
+    String customerId =
+        customerRepository
+            .findByEmail(email)
+            .map(c -> c.getId().getValue().toString())
+            .orElse(seller.getId().getValue().toString());
+
+    String token =
+        jwtService.generateToken(customerId, email, "seller", seller.getId().getValue().toString());
+
+    AuthResponse.UserInfo userInfo =
+        new AuthResponse.UserInfo(
+            UUID.fromString(customerId),
+            email,
+            seller.getFullname().getValue(),
+            seller.getFullname().getValue(),
+            "seller");
+    return ResponseEntity.status(HttpStatus.CREATED)
+        .body(new AuthResponse(token, jwtService.getExpiration(), userInfo));
   }
 
   @PutMapping("/sellers/{id}")

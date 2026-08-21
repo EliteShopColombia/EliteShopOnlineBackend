@@ -3,11 +3,14 @@ package com.eliteshop.colombia.seller.infrastructure.controller.verification;
 import com.eliteshop.colombia.seller.application.usecase.VerifySellerUseCase;
 import com.eliteshop.colombia.seller.domain.model.verification.SellerVerification;
 import java.io.InputStream;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -16,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/sellers/{sellerId}/verification")
 @RequiredArgsConstructor
@@ -26,6 +30,7 @@ public class SellerVerificationController {
 
   private final VerifySellerUseCase verifySellerUseCase;
   private final SellerVerificationMapperResponse mapper;
+  private final ThreadPoolTaskExecutor sellerVerificationExecutor;
 
   @PostMapping(value = "/document", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public ResponseEntity<?> uploadDocument(
@@ -62,9 +67,35 @@ public class SellerVerificationController {
   }
 
   @PostMapping("/validate")
-  public ResponseEntity<SellerVerificationResponse> validate(@PathVariable UUID sellerId) {
-    SellerVerification verification = verifySellerUseCase.validate(sellerId);
-    return ResponseEntity.ok(mapper.toResponse(verification));
+  public ResponseEntity<Map<String, String>> validate(@PathVariable UUID sellerId) {
+    SellerVerification verification = verifySellerUseCase.getStatus(sellerId);
+
+    if (!"SELFIE_UPLOADED".equals(verification.getStatus().getValue())) {
+      throw new RuntimeException("Primero sube la cedula y la selfie");
+    }
+
+    runValidationAsync(sellerId);
+
+    return ResponseEntity.accepted()
+        .body(
+            Map.of(
+                "status", "PROCESSING",
+                "message",
+                    "Verificacion en proceso. Consulta GET /verification para el resultado"));
+  }
+
+  private void runValidationAsync(UUID sellerId) {
+    sellerVerificationExecutor.execute(
+        () -> {
+          try {
+            log.info("Iniciando validacion asincrona para sellerId={}", sellerId);
+            verifySellerUseCase.validate(sellerId);
+            log.info("Validacion completada para sellerId={}", sellerId);
+          } catch (Exception e) {
+            log.error(
+                "Error en validacion asincrona para sellerId={}: {}", sellerId, e.getMessage(), e);
+          }
+        });
   }
 
   @GetMapping

@@ -2,6 +2,7 @@ package com.eliteshop.colombia.seller.infrastructure.config;
 
 import com.eliteshop.colombia.seller.application.usecase.*;
 import com.eliteshop.colombia.seller.domain.repository.SellerRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -41,8 +42,9 @@ public class SellerBeanConfiguration {
   }
 
   @Bean
-  public SellerSaveUseCase sellerSaveUseCase(SellerRepository sellerRepository) {
-    return new SellerSaveUseCase(sellerRepository);
+  public SellerSaveUseCase sellerSaveUseCase(
+      SellerRepository sellerRepository, ApplicationEventPublisher eventPublisher) {
+    return new SellerSaveUseCase(sellerRepository, eventPublisher);
   }
 
   @Bean

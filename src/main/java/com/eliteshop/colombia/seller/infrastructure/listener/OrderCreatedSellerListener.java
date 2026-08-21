@@ -41,5 +41,8 @@ public class OrderCreatedSellerListener {
             TIME_FORMATTER.format(event.occurredAt()));
 
     slackWebhookAdapter.sendToChannel("pedidos-test", message);
+
+    log.info(
+        "Notificacion de pedido enviada al canal pedidos-test para orderId={}", event.orderId());
   }
 }

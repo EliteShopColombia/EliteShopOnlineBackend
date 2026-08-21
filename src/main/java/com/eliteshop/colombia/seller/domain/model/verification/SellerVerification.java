@@ -82,7 +82,7 @@ public class SellerVerification {
         this.selfieMinioKey,
         SellerVerificationStatus.approved(),
         confidenceScore,
-        this.rejectionReason,
+        null,
         this.createdAt,
         new SellerVerificationUpdatedAt(Instant.now()));
   }

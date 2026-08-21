@@ -48,20 +48,16 @@ public class CustomerController {
       info =
           new CustomerInfo(
               request.getDniType() != null
-                  ? new CustomerDniType(
-                      request.getDniType())
+                  ? new CustomerDniType(request.getDniType())
                   : existing.getInfo().getDniType(),
               request.getDniNumber() != null
-                  ? new CustomerDniNumber(
-                      request.getDniNumber())
+                  ? new CustomerDniNumber(request.getDniNumber())
                   : existing.getInfo().getDniNumber(),
               request.getAddress() != null
-                  ? new CustomerAddress(
-                      request.getAddress())
+                  ? new CustomerAddress(request.getAddress())
                   : existing.getInfo().getAddress(),
               request.getDepartment() != null
-                  ? new CustomerDepartment(
-                      request.getDepartment())
+                  ? new CustomerDepartment(request.getDepartment())
                   : existing.getInfo().getDepartment(),
               request.getCity() != null
                   ? new CustomerCity(request.getCity())
@@ -74,22 +70,18 @@ public class CustomerController {
         new Customer(
             existing.getId(),
             request.getFirstName() != null
-                ? new CustomerFirstName(
-                    request.getFirstName())
+                ? new CustomerFirstName(request.getFirstName())
                 : existing.getFirstName(),
             request.getLastName() != null
-                ? new CustomerLastName(
-                    request.getLastName())
+                ? new CustomerLastName(request.getLastName())
                 : existing.getLastName(),
             existing.getEmail(),
             request.getPhoneNumber() != null
-                ? new CustomerPhoneNumber(
-                    request.getPhoneNumber())
+                ? new CustomerPhoneNumber(request.getPhoneNumber())
                 : existing.getPhoneNumber(),
             existing.getPassword(),
             request.getProfileImage() != null
-                ? new CustomerProfileImage(
-                    request.getProfileImage())
+                ? new CustomerProfileImage(request.getProfileImage())
                 : existing.getProfileImage(),
             existing.getCreatedAt(),
             existing.getUpdatedAt(),

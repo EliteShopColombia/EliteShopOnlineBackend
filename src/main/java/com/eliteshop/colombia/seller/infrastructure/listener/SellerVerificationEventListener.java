@@ -44,6 +44,8 @@ public class SellerVerificationEventListener {
       sendRejectedNotification(event);
       emailService.sendRejectedEmail(event);
     }
+
+    log.info("Verificacion procesada para sellerId={}", event.sellerId());
   }
 
   private void updateSellerVerifiedStatus(UUID sellerId, boolean verified) {
@@ -69,7 +71,7 @@ public class SellerVerificationEventListener {
                 + "• Confianza: %.0f%%\n"
                 + "• Hora: %s",
             event.sellerId(), event.confidence() * 100, TIME_FORMATTER.format(event.occurredAt()));
-    slackWebhookAdapter.sendToChannel("notificaciones-test", message);
+    slackWebhookAdapter.sendToChannel("notifications-test", message);
   }
 
   private void sendRejectedNotification(SellerVerificationCompletedEvent event) {
@@ -80,6 +82,6 @@ public class SellerVerificationEventListener {
                 + "• Razon: %s\n"
                 + "• Hora: %s",
             event.sellerId(), event.message(), TIME_FORMATTER.format(event.occurredAt()));
-    slackWebhookAdapter.sendToChannel("notificaciones-test", message);
+    slackWebhookAdapter.sendToChannel("notifications-test", message);
   }
 }

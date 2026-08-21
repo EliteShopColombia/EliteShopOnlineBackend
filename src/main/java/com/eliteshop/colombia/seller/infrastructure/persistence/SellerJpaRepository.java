@@ -6,4 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface SellerJpaRepository extends JpaRepository<SellerEntity, UUID> {
   Optional<SellerEntity> findByDniNumber(String dniNumber);
+
+  Optional<SellerEntity> findByContactEmail(String email);
 }

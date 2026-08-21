@@ -2,7 +2,9 @@ package com.eliteshop.colombia.product.infrastructure.adapter;
 
 import com.eliteshop.colombia.product.domain.model.Product;
 import com.eliteshop.colombia.product.domain.model.ProductId;
+import com.eliteshop.colombia.product.domain.model.ProductImage;
 import com.eliteshop.colombia.product.domain.model.ProductName;
+import com.eliteshop.colombia.product.domain.repository.ProductImageRepository;
 import com.eliteshop.colombia.product.domain.repository.ProductRepository;
 import com.eliteshop.colombia.product.infrastructure.mapper.ProductMapper;
 import com.eliteshop.colombia.product.infrastructure.persistence.ProductEntity;
@@ -21,6 +23,7 @@ public class ProductPostgresAdapter implements ProductRepository {
 
   private final ProductJpaRepository jpaRepository;
   private final ProductMapper mapper;
+  private final ProductImageRepository productImageRepository;
 
   @Override
   public Product save(Product product) {
@@ -47,21 +50,48 @@ public class ProductPostgresAdapter implements ProductRepository {
 
   @Override
   public List<Product> findAll() {
-    return jpaRepository.findAll().stream().map(mapper::toDomain).collect(Collectors.toList());
+    return jpaRepository.findAll().stream()
+        .map(this::toDomainWithImages)
+        .collect(Collectors.toList());
   }
 
   @Override
   public Page<Product> findAll(Pageable pageable) {
-    return jpaRepository.findAll(pageable).map(mapper::toDomain);
+    return jpaRepository.findAll(pageable).map(this::toDomainWithImages);
   }
 
   @Override
   public Optional<Product> findById(ProductId id) {
-    return jpaRepository.findById(id.getValue()).map(mapper::toDomain);
+    return jpaRepository.findById(id.getValue()).map(this::toDomainWithImages);
   }
 
   @Override
   public Optional<Product> findByName(ProductName name) {
-    return jpaRepository.findByName(name.getValue()).map(mapper::toDomain);
+    return jpaRepository.findByName(name.getValue()).map(this::toDomainWithImages);
+  }
+
+  @Override
+  public void reduceStock(ProductId id, int quantity) {
+    ProductEntity existingEntity = jpaRepository.findById(id.getValue()).orElseThrow();
+    int newStock = existingEntity.getStock() - quantity;
+    if (newStock < 0) {
+      throw new IllegalStateException(
+          "Stock insuficiente para el producto " + existingEntity.getName());
+    }
+    existingEntity.setStock(newStock);
+    jpaRepository.save(existingEntity);
+  }
+
+  private Product toDomainWithImages(ProductEntity entity) {
+    if (entity == null) return null;
+    ProductId productId = new ProductId(entity.getId());
+    List<ProductImage> images = productImageRepository.findByProductId(productId);
+    return new Product(
+        productId,
+        new com.eliteshop.colombia.product.domain.model.ProductSellerId(entity.getSellerId()),
+        new ProductName(entity.getName()),
+        new com.eliteshop.colombia.product.domain.model.ProductPrice(entity.getPrice()),
+        new com.eliteshop.colombia.product.domain.model.ProductStock(entity.getStock()),
+        images);
   }
 }

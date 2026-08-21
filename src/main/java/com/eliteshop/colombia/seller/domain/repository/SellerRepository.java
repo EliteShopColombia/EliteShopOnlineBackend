@@ -18,4 +18,6 @@ public interface SellerRepository {
   Optional<Seller> findById(SellerId id);
 
   Optional<Seller> findByDniNumber(SellerDniNumber dniNumber);
+
+  Optional<Seller> findByEmail(String email);
 }

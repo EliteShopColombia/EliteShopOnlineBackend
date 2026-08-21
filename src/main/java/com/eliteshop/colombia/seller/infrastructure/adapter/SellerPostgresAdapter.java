@@ -81,4 +81,9 @@ public class SellerPostgresAdapter implements SellerRepository {
   public Optional<Seller> findByDniNumber(SellerDniNumber dniNumber) {
     return jpaRepository.findByDniNumber(dniNumber.getValue()).map(mapper::toDomain);
   }
+
+  @Override
+  public Optional<Seller> findByEmail(String email) {
+    return jpaRepository.findByContactEmail(email).map(mapper::toDomain);
+  }
 }

@@ -65,6 +65,10 @@ public class ProductMapper {
   }
 
   public ProductResponse toResponse(Product domain) {
+    return toResponse(domain, null);
+  }
+
+  public ProductResponse toResponse(Product domain, String baseUrl) {
     if (domain == null) return null;
 
     ProductResponse response = new ProductResponse();
@@ -73,10 +77,17 @@ public class ProductMapper {
     response.setName(domain.getName().getValue());
     response.setPrice(domain.getPrice().getValue());
     response.setStock(domain.getStock().getValue());
-    if (domain.getImages() != null) {
+    if (domain.getImages() != null && !domain.getImages().isEmpty()) {
       response.setImages(
           domain.getImages().stream()
-              .map(img -> img.getImageUrl().getValue())
+              .map(
+                  img -> {
+                    String objectKey = img.getImageUrl().getValue();
+                    if (baseUrl != null) {
+                      return baseUrl + "/api/v1/products/images?key=" + objectKey;
+                    }
+                    return objectKey;
+                  })
               .collect(Collectors.toList()));
     } else {
       response.setImages(Collections.emptyList());

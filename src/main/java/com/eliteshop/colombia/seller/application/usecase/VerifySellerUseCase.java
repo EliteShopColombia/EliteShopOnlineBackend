@@ -11,8 +11,10 @@ import java.io.InputStream;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 
+@Slf4j
 @RequiredArgsConstructor
 public class VerifySellerUseCase {
 
@@ -23,12 +25,17 @@ public class VerifySellerUseCase {
   private final ApplicationEventPublisher eventPublisher;
 
   public SellerVerification uploadDocument(UUID sellerId, String filename, InputStream stream) {
+    log.info("Subiendo documento de verificacion para vendedor sellerId={}", sellerId);
     String objectKey = minIOAdapter.uploadDocument(sellerId.toString(), filename, stream);
 
     Seller seller =
         sellerRepository
             .findById(new SellerId(sellerId))
-            .orElseThrow(() -> new RuntimeException("Vendedor no encontrado"));
+            .orElseThrow(
+                () -> {
+                  log.error("Vendedor no encontrado sellerId={}", sellerId);
+                  return new RuntimeException("Vendedor no encontrado");
+                });
 
     SellerVerification verification =
         repository
@@ -39,28 +46,46 @@ public class VerifySellerUseCase {
         verification.withDocumentUploaded(
             new SellerVerificationDocumentMinioKey(objectKey),
             new SellerVerificationDocumentNumber(seller.getDniNumber().getValue()));
+    log.info("Documento subido exitosamente para vendedor sellerId={}", sellerId);
     return repository.save(verification);
   }
 
   public SellerVerification uploadSelfie(UUID sellerId, String filename, InputStream stream) {
+    log.info("Subiendo selfie de verificacion para vendedor sellerId={}", sellerId);
     String objectKey = minIOAdapter.uploadSelfie(sellerId.toString(), filename, stream);
 
     SellerVerification verification =
         repository
             .findBySellerId(sellerId)
-            .orElseThrow(() -> new RuntimeException("Sube la cedula primero"));
+            .orElseThrow(
+                () -> {
+                  log.error(
+                      "No existe verificacion pendiente para sellerId={}, suba la cedula primero",
+                      sellerId);
+                  return new RuntimeException("Sube la cedula primero");
+                });
 
     verification = verification.withSelfieUploaded(new SellerVerificationSelfieMinioKey(objectKey));
+    log.info("Selfie subida exitosamente para vendedor sellerId={}", sellerId);
     return repository.save(verification);
   }
 
   public SellerVerification validate(UUID sellerId) {
+    log.info("Validando verificacion para vendedor sellerId={}", sellerId);
     SellerVerification verification =
         repository
             .findBySellerId(sellerId)
-            .orElseThrow(() -> new RuntimeException("No hay verificacion pendiente"));
+            .orElseThrow(
+                () -> {
+                  log.error("No hay verificacion pendiente para sellerId={}", sellerId);
+                  return new RuntimeException("No hay verificacion pendiente");
+                });
 
     if (!"SELFIE_UPLOADED".equals(verification.getStatus().getValue())) {
+      log.error(
+          "Verificacion en estado incorrecto para sellerId={}: {}",
+          sellerId,
+          verification.getStatus().getValue());
       throw new RuntimeException("Primero sube la cedula y la selfie");
     }
 
@@ -85,12 +110,22 @@ public class VerifySellerUseCase {
         new SellerVerificationCompletedEvent(
             sellerId, isApproved, result.confidence(), result.message(), Instant.now()));
 
+    log.info(
+        "Verificacion completada para sellerId={}, aprobado={}, confianza={}",
+        sellerId,
+        isApproved,
+        result.confidence());
     return savedVerification;
   }
 
   public SellerVerification getStatus(UUID sellerId) {
+    log.info("Consultando estado de verificacion para vendedor sellerId={}", sellerId);
     return repository
         .findBySellerId(sellerId)
-        .orElseThrow(() -> new RuntimeException("No hay verificacion para este vendedor"));
+        .orElseThrow(
+            () -> {
+              log.error("No hay verificacion para sellerId={}", sellerId);
+              return new RuntimeException("No hay verificacion para este vendedor");
+            });
   }
 }

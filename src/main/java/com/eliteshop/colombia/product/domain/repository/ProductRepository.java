@@ -22,4 +22,6 @@ public interface ProductRepository {
   Optional<Product> findById(ProductId id);
 
   Optional<Product> findByName(ProductName name);
+
+  void reduceStock(ProductId id, int quantity);
 }

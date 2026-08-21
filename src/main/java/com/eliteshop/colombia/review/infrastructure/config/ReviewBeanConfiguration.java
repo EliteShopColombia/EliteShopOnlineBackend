@@ -1,5 +1,6 @@
 package com.eliteshop.colombia.review.infrastructure.config;
 
+import com.eliteshop.colombia.order.domain.repository.OrderItemRepository;
 import com.eliteshop.colombia.review.application.usecase.*;
 import com.eliteshop.colombia.review.domain.repository.ReviewRepository;
 import org.springframework.context.annotation.Bean;
@@ -9,8 +10,9 @@ import org.springframework.context.annotation.Configuration;
 public class ReviewBeanConfiguration {
 
   @Bean
-  public ReviewSaveUseCase reviewSaveUseCase(ReviewRepository reviewRepository) {
-    return new ReviewSaveUseCase(reviewRepository);
+  public ReviewSaveUseCase reviewSaveUseCase(
+      ReviewRepository reviewRepository, OrderItemRepository orderItemRepository) {
+    return new ReviewSaveUseCase(reviewRepository, orderItemRepository);
   }
 
   @Bean
