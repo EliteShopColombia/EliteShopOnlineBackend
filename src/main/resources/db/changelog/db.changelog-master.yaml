@@ -15,3 +15,15 @@ databaseChangeLog:
       file: db/migrations/007-seller-verification-delete-cascade.yaml
   - include:
       file: db/migrations/009-create-product-review-image-tables.yaml
+  - include:
+      file: db/migrations/012-create-cart-orderitem-payment-method.yaml
+  - include:
+      file: db/migrations/013-add-epayco-customer-id-to-customer-payment-method.yaml
+  - include:
+      file: db/migrations/014-add-customer-is-active.yaml
+  - include:
+      file: db/migrations/015-drop-customer-is-active.yaml
+  - include:
+      file: db/migrations/016-add-shipping-fields-to-orders.yaml
+  - include:
+      file: db/migrations/017-create-tracking-events.yaml

@@ -1,0 +1,48 @@
+databaseChangeLog:
+  - changeSet:
+      id: 017-create-tracking-events
+      author: eliteshop
+      changes:
+        - createTable:
+            tableName: tracking_events
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: uuid_generate_v4()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: order_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: location
+                  type: varchar(200)
+              - column:
+                  name: description
+                  type: varchar(500)
+              - column:
+                  name: event_timestamp
+                  type: timestamp
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: tracking_events
+            baseColumnNames: order_id
+            referencedTableName: orders
+            referencedColumnNames: order_id
+            constraintName: fk_tracking_events_order

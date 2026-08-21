@@ -1,0 +1,8 @@
+databaseChangeLog:
+  - changeSet:
+      id: 015-drop-customer-is-active
+      author: eliteshop
+      changes:
+        - dropColumn:
+            tableName: customer
+            columnName: is_active

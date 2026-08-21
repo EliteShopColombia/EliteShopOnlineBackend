@@ -1,0 +1,25 @@
+databaseChangeLog:
+  - changeSet:
+      id: 013-add-epayco-customer-id-to-customer-payment-method
+      author: eliteshop
+      changes:
+        - addColumn:
+            tableName: customer_payment_method
+            columns:
+              - column:
+                  name: epayco_customer_id
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+        - addColumn:
+            tableName: customer_payment_method
+            columns:
+              - column:
+                  name: doc_type
+                  type: varchar(10)
+        - addColumn:
+            tableName: customer_payment_method
+            columns:
+              - column:
+                  name: doc_number
+                  type: varchar(30)

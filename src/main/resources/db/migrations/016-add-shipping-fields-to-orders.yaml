@@ -1,0 +1,20 @@
+databaseChangeLog:
+  - changeSet:
+      id: 016-add-shipping-fields-to-orders
+      author: eliteshop
+      changes:
+        - addColumn:
+            tableName: orders
+            columns:
+              - column:
+                  name: tracking_number
+                  type: varchar(100)
+                  remarks: Numero de guia de la transportadora
+              - column:
+                  name: shipping_carrier
+                  type: varchar(50)
+                  remarks: Nombre de la transportadora (Servientrega, Coordinadora, etc.)
+              - column:
+                  name: shipping_label_url
+                  type: varchar(500)
+                  remarks: URL del PDF de la etiqueta de envio
