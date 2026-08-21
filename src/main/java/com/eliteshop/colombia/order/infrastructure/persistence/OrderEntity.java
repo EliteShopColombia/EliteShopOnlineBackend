@@ -42,4 +42,13 @@ public class OrderEntity {
 
   @Column(name = "updated_at")
   private Timestamp updatedAt;
+
+  @Column(name = "tracking_number")
+  private String trackingNumber;
+
+  @Column(name = "shipping_carrier")
+  private String shippingCarrier;
+
+  @Column(name = "shipping_label_url")
+  private String shippingLabelUrl;
 }

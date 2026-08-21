@@ -37,8 +37,8 @@ class OrderFindAllUseCaseTest {
 
     List<Order> orders =
         List.of(
-            buildOrder(orderId1, customerId, OrderStatus.PENDING, new BigDecimal("100000")),
-            buildOrder(orderId2, customerId, OrderStatus.CONFIRMED, new BigDecimal("200000")));
+            buildOrder(orderId1, customerId, OrderStatus.PENDING_PAYMENT, new BigDecimal("100000")),
+            buildOrder(orderId2, customerId, OrderStatus.PAID, new BigDecimal("200000")));
 
     when(repository.findAll()).thenReturn(orders);
 
@@ -78,6 +78,9 @@ class OrderFindAllUseCaseTest {
         new OrderShippingDepartment("Bogota"),
         new OrderShippingCity("Bogota D.C."),
         new OrderCreatedAt(Timestamp.from(Instant.now())),
+        null,
+        null,
+        null,
         null);
   }
 }

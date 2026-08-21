@@ -5,8 +5,10 @@ import com.eliteshop.colombia.order.domain.exception.OrderNotFoundException;
 import com.eliteshop.colombia.order.domain.model.Order;
 import com.eliteshop.colombia.order.domain.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 
+@Slf4j
 @RequiredArgsConstructor
 public class OrderUpdateUseCase {
 
@@ -14,7 +16,10 @@ public class OrderUpdateUseCase {
   private final ApplicationEventPublisher eventPublisher;
 
   public void execute(Order order) {
+    log.info("Actualizando orden con id: {}", order.getId());
+
     if (order.getId() == null || repository.findById(order.getId()).isEmpty()) {
+      log.error("Orden no encontrada con id: {}", order.getId());
       throw new OrderNotFoundException("The order not exist in our platform");
     }
 
@@ -30,6 +35,13 @@ public class OrderUpdateUseCase {
               order.getCustomerId().getValue(),
               previousStatus,
               order.getStatus().name()));
+      log.info(
+          "Estado de orden cambiado de {} a {} para orden id: {}",
+          previousStatus,
+          order.getStatus().name(),
+          order.getId());
     }
+
+    log.info("Orden actualizada exitosamente con id: {}", order.getId());
   }
 }

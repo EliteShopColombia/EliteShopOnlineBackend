@@ -4,22 +4,32 @@ import com.eliteshop.colombia.order.domain.model.Order;
 import com.eliteshop.colombia.order.domain.model.OrderCreatedAt;
 import com.eliteshop.colombia.order.domain.model.OrderCustomerId;
 import com.eliteshop.colombia.order.domain.model.OrderId;
+import com.eliteshop.colombia.order.domain.model.OrderItem;
 import com.eliteshop.colombia.order.domain.model.OrderShippingAddress;
 import com.eliteshop.colombia.order.domain.model.OrderShippingCity;
 import com.eliteshop.colombia.order.domain.model.OrderShippingDepartment;
 import com.eliteshop.colombia.order.domain.model.OrderStatus;
 import com.eliteshop.colombia.order.domain.model.OrderTotalAmount;
 import com.eliteshop.colombia.order.domain.model.OrderUpdatedAt;
+import com.eliteshop.colombia.order.domain.repository.OrderItemRepository;
+import com.eliteshop.colombia.order.infrastructure.controller.dto.OrderItemResponse;
 import com.eliteshop.colombia.order.infrastructure.controller.dto.OrderRequest;
 import com.eliteshop.colombia.order.infrastructure.controller.dto.OrderResponse;
 import com.eliteshop.colombia.order.infrastructure.persistence.OrderEntity;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class OrderMapper {
+
+  private final OrderItemRepository orderItemRepository;
 
   public Order toDomain(OrderEntity entity) {
     if (entity == null) {
@@ -34,7 +44,10 @@ public class OrderMapper {
         new OrderShippingDepartment(entity.getShippingDepartment()),
         new OrderShippingCity(entity.getShippingCity()),
         new OrderCreatedAt(entity.getCreatedAt()),
-        entity.getUpdatedAt() != null ? new OrderUpdatedAt(entity.getUpdatedAt()) : null);
+        entity.getUpdatedAt() != null ? new OrderUpdatedAt(entity.getUpdatedAt()) : null,
+        entity.getTrackingNumber(),
+        entity.getShippingCarrier(),
+        entity.getShippingLabelUrl());
   }
 
   public OrderEntity toEntity(Order domain) {
@@ -53,6 +66,9 @@ public class OrderMapper {
     if (domain.getUpdatedAt() != null) {
       entity.setUpdatedAt(domain.getUpdatedAt().getValue());
     }
+    entity.setTrackingNumber(domain.getTrackingNumber());
+    entity.setShippingCarrier(domain.getShippingCarrier());
+    entity.setShippingLabelUrl(domain.getShippingLabelUrl());
     return entity;
   }
 
@@ -63,12 +79,15 @@ public class OrderMapper {
     return new Order(
         new OrderId(UUID.randomUUID()),
         new OrderCustomerId(request.getCustomerId()),
-        OrderStatus.PENDING,
+        OrderStatus.PENDING_PAYMENT,
         new OrderTotalAmount(request.getTotalAmount()),
         new OrderShippingAddress(request.getShippingAddress()),
         new OrderShippingDepartment(request.getShippingDepartment()),
         new OrderShippingCity(request.getShippingCity()),
         new OrderCreatedAt(Timestamp.from(Instant.now())),
+        null,
+        null,
+        null,
         null);
   }
 
@@ -88,6 +107,33 @@ public class OrderMapper {
     if (domain.getUpdatedAt() != null) {
       response.setUpdatedAt(domain.getUpdatedAt().getValue());
     }
+    response.setTrackingNumber(domain.getTrackingNumber());
+    response.setShippingCarrier(domain.getShippingCarrier());
+    response.setShippingLabelUrl(domain.getShippingLabelUrl());
+    return response;
+  }
+
+  public OrderResponse toResponseWithItems(Order domain) {
+    OrderResponse response = toResponse(domain);
+    if (response == null) {
+      return null;
+    }
+    List<OrderItem> items = orderItemRepository.findByOrderId(domain.getId().getValue());
+    response.setItems(
+        items != null
+            ? items.stream().map(this::toItemResponse).collect(Collectors.toList())
+            : Collections.emptyList());
+    return response;
+  }
+
+  private OrderItemResponse toItemResponse(OrderItem item) {
+    OrderItemResponse response = new OrderItemResponse();
+    response.setId(item.getId().getValue());
+    response.setProductId(item.getProductId().getValue());
+    response.setSellerId(item.getSellerId().getValue());
+    response.setQuantity(item.getQuantity().getValue());
+    response.setUnitPrice(item.getUnitPrice().getValue());
+    response.setSubtotal(item.getSubtotal());
     return response;
   }
 }

@@ -35,7 +35,8 @@ class OrderDeleteUseCaseTest {
     OrderId id = new OrderId(orderId);
 
     Order existingOrder =
-        buildOrder(orderId, UUID.randomUUID(), OrderStatus.PENDING, new BigDecimal("100000"));
+        buildOrder(
+            orderId, UUID.randomUUID(), OrderStatus.PENDING_PAYMENT, new BigDecimal("100000"));
 
     when(repository.findById(id)).thenReturn(Optional.of(existingOrder));
 
@@ -84,6 +85,9 @@ class OrderDeleteUseCaseTest {
         new OrderShippingDepartment("Bogota"),
         new OrderShippingCity("Bogota D.C."),
         new OrderCreatedAt(Timestamp.from(Instant.now())),
+        null,
+        null,
+        null,
         null);
   }
 }

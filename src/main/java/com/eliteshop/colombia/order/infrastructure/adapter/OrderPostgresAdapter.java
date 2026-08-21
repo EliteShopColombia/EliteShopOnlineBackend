@@ -7,6 +7,7 @@ import com.eliteshop.colombia.order.infrastructure.mapper.OrderMapper;
 import com.eliteshop.colombia.order.infrastructure.persistence.OrderJpaRepository;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -38,6 +39,9 @@ public class OrderPostgresAdapter implements OrderRepository {
     if (order.getUpdatedAt() != null) {
       existingEntity.setUpdatedAt(order.getUpdatedAt().getValue());
     }
+    existingEntity.setTrackingNumber(order.getTrackingNumber());
+    existingEntity.setShippingCarrier(order.getShippingCarrier());
+    existingEntity.setShippingLabelUrl(order.getShippingLabelUrl());
 
     jpaRepository.save(existingEntity);
   }
@@ -55,5 +59,12 @@ public class OrderPostgresAdapter implements OrderRepository {
   @Override
   public Optional<Order> findById(OrderId id) {
     return jpaRepository.findById(id.getValue()).map(mapper::toDomain);
+  }
+
+  @Override
+  public List<Order> findByCustomerId(UUID customerId) {
+    return jpaRepository.findByCustomerIdOrderByCreatedAtDesc(customerId).stream()
+        .map(mapper::toDomain)
+        .collect(Collectors.toList());
   }
 }

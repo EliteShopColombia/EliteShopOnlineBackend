@@ -41,7 +41,8 @@ class OrderSaveUseCaseTest {
     UUID orderId = UUID.randomUUID();
     UUID customerId = UUID.randomUUID();
 
-    Order order = buildOrder(orderId, customerId, OrderStatus.PENDING, new BigDecimal("250000"));
+    Order order =
+        buildOrder(orderId, customerId, OrderStatus.PENDING_PAYMENT, new BigDecimal("250000"));
 
     when(repository.findById(any(OrderId.class))).thenReturn(Optional.empty());
 
@@ -65,9 +66,10 @@ class OrderSaveUseCaseTest {
     UUID orderId = UUID.randomUUID();
     UUID customerId = UUID.randomUUID();
 
-    Order order = buildOrder(orderId, customerId, OrderStatus.PENDING, new BigDecimal("150000"));
+    Order order =
+        buildOrder(orderId, customerId, OrderStatus.PENDING_PAYMENT, new BigDecimal("150000"));
     Order existingOrder =
-        buildOrder(orderId, customerId, OrderStatus.CONFIRMED, new BigDecimal("150000"));
+        buildOrder(orderId, customerId, OrderStatus.PAID, new BigDecimal("150000"));
 
     when(repository.findById(any(OrderId.class))).thenReturn(Optional.of(existingOrder));
 
@@ -85,7 +87,7 @@ class OrderSaveUseCaseTest {
     UUID customerId = UUID.randomUUID();
     BigDecimal amount = new BigDecimal("999999.99");
 
-    Order order = buildOrder(orderId, customerId, OrderStatus.PENDING, amount);
+    Order order = buildOrder(orderId, customerId, OrderStatus.PENDING_PAYMENT, amount);
 
     when(repository.findById(any(OrderId.class))).thenReturn(Optional.empty());
 
@@ -103,7 +105,8 @@ class OrderSaveUseCaseTest {
     UUID orderId = UUID.randomUUID();
     UUID customerId = UUID.randomUUID();
 
-    Order order = buildOrder(orderId, customerId, OrderStatus.PENDING, new BigDecimal("100000"));
+    Order order =
+        buildOrder(orderId, customerId, OrderStatus.PENDING_PAYMENT, new BigDecimal("100000"));
 
     when(repository.findById(any(OrderId.class))).thenReturn(Optional.empty());
 
@@ -115,7 +118,7 @@ class OrderSaveUseCaseTest {
     Order saved = captor.getValue();
     assertThat(saved.getId().getValue()).isEqualTo(orderId);
     assertThat(saved.getCustomerId().getValue()).isEqualTo(customerId);
-    assertThat(saved.getStatus()).isEqualTo(OrderStatus.PENDING);
+    assertThat(saved.getStatus()).isEqualTo(OrderStatus.PENDING_PAYMENT);
     assertThat(saved.getShippingAddress().getValue()).isEqualTo("Calle 100 #15-20");
     assertThat(saved.getShippingDepartment().getValue()).isEqualTo("Bogota");
     assertThat(saved.getShippingCity().getValue()).isEqualTo("Bogota D.C.");
@@ -132,6 +135,9 @@ class OrderSaveUseCaseTest {
         new OrderShippingDepartment("Bogota"),
         new OrderShippingCity("Bogota D.C."),
         new OrderCreatedAt(Timestamp.from(Instant.now())),
+        null,
+        null,
+        null,
         null);
   }
 }

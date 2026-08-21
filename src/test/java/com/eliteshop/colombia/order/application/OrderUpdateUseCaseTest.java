@@ -42,9 +42,9 @@ class OrderUpdateUseCaseTest {
     UUID customerId = UUID.randomUUID();
 
     Order existingOrder =
-        buildOrder(orderId, customerId, OrderStatus.PENDING, new BigDecimal("200000"));
+        buildOrder(orderId, customerId, OrderStatus.PENDING_PAYMENT, new BigDecimal("200000"));
     Order updatedOrder =
-        buildOrder(orderId, customerId, OrderStatus.CONFIRMED, new BigDecimal("200000"));
+        buildOrder(orderId, customerId, OrderStatus.PAID, new BigDecimal("200000"));
 
     when(repository.findById(any(OrderId.class)))
         .thenReturn(Optional.of(existingOrder))
@@ -61,8 +61,8 @@ class OrderUpdateUseCaseTest {
     OrderStatusChangedEvent event = eventCaptor.getValue();
     assertThat(event.orderId()).isEqualTo(orderId);
     assertThat(event.customerId()).isEqualTo(customerId);
-    assertThat(event.previousStatus()).isEqualTo("PENDING");
-    assertThat(event.newStatus()).isEqualTo("CONFIRMED");
+    assertThat(event.previousStatus()).isEqualTo("PENDING_PAYMENT");
+    assertThat(event.newStatus()).isEqualTo("PAID");
   }
 
   @Test
@@ -71,9 +71,9 @@ class OrderUpdateUseCaseTest {
     UUID customerId = UUID.randomUUID();
 
     Order existingOrder =
-        buildOrder(orderId, customerId, OrderStatus.PENDING, new BigDecimal("150000"));
+        buildOrder(orderId, customerId, OrderStatus.PENDING_PAYMENT, new BigDecimal("150000"));
     Order sameStatusOrder =
-        buildOrder(orderId, customerId, OrderStatus.PENDING, new BigDecimal("150000"));
+        buildOrder(orderId, customerId, OrderStatus.PENDING_PAYMENT, new BigDecimal("150000"));
 
     when(repository.findById(any(OrderId.class)))
         .thenReturn(Optional.of(existingOrder))
@@ -107,7 +107,7 @@ class OrderUpdateUseCaseTest {
     UUID customerId = UUID.randomUUID();
 
     Order existingOrder =
-        buildOrder(orderId, customerId, OrderStatus.PENDING, new BigDecimal("100000"));
+        buildOrder(orderId, customerId, OrderStatus.PENDING_PAYMENT, new BigDecimal("100000"));
     Order updatedOrder =
         buildOrder(orderId, customerId, OrderStatus.DELIVERED, new BigDecimal("100000"));
 
@@ -126,7 +126,7 @@ class OrderUpdateUseCaseTest {
     UUID customerId = UUID.randomUUID();
 
     OrderStatus[] transitions = {
-      OrderStatus.PENDING, OrderStatus.CONFIRMED, OrderStatus.SHIPPED, OrderStatus.DELIVERED
+      OrderStatus.PENDING_PAYMENT, OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED
     };
 
     for (int i = 0; i < transitions.length - 1; i++) {
@@ -162,6 +162,9 @@ class OrderUpdateUseCaseTest {
         new OrderShippingDepartment("Bogota"),
         new OrderShippingCity("Bogota D.C."),
         new OrderCreatedAt(Timestamp.from(Instant.now())),
+        null,
+        null,
+        null,
         null);
   }
 }

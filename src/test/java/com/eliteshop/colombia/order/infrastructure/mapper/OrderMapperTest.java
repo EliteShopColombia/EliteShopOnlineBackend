@@ -1,8 +1,10 @@
 package com.eliteshop.colombia.order.infrastructure.mapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import com.eliteshop.colombia.order.domain.model.*;
+import com.eliteshop.colombia.order.domain.repository.OrderItemRepository;
 import com.eliteshop.colombia.order.infrastructure.controller.dto.OrderRequest;
 import com.eliteshop.colombia.order.infrastructure.controller.dto.OrderResponse;
 import com.eliteshop.colombia.order.infrastructure.persistence.OrderEntity;
@@ -19,7 +21,8 @@ class OrderMapperTest {
 
   @BeforeEach
   void setUp() {
-    mapper = new OrderMapper();
+    OrderItemRepository orderItemRepository = mock(OrderItemRepository.class);
+    mapper = new OrderMapper(orderItemRepository);
   }
 
   @Test
@@ -27,7 +30,7 @@ class OrderMapperTest {
     OrderEntity entity = new OrderEntity();
     entity.setId(UUID.randomUUID());
     entity.setCustomerId(UUID.randomUUID());
-    entity.setStatus("PENDING");
+    entity.setStatus("PENDING_PAYMENT");
     entity.setTotalAmount(new BigDecimal("200000"));
     entity.setShippingAddress("Calle 100 #15-20");
     entity.setShippingDepartment("Bogota");
@@ -40,7 +43,7 @@ class OrderMapperTest {
     assertThat(domain).isNotNull();
     assertThat(domain.getId().getValue()).isEqualTo(entity.getId());
     assertThat(domain.getCustomerId().getValue()).isEqualTo(entity.getCustomerId());
-    assertThat(domain.getStatus()).isEqualTo(OrderStatus.PENDING);
+    assertThat(domain.getStatus()).isEqualTo(OrderStatus.PENDING_PAYMENT);
     assertThat(domain.getTotalAmount().getValue()).isEqualByComparingTo(entity.getTotalAmount());
     assertThat(domain.getShippingAddress().getValue()).isEqualTo("Calle 100 #15-20");
     assertThat(domain.getShippingDepartment().getValue()).isEqualTo("Bogota");
@@ -54,7 +57,7 @@ class OrderMapperTest {
     OrderEntity entity = new OrderEntity();
     entity.setId(UUID.randomUUID());
     entity.setCustomerId(UUID.randomUUID());
-    entity.setStatus("CONFIRMED");
+    entity.setStatus("PAID");
     entity.setTotalAmount(new BigDecimal("150000"));
     entity.setShippingAddress("Carrera 7 #32-16");
     entity.setShippingDepartment("Antioquia");
@@ -83,12 +86,15 @@ class OrderMapperTest {
         new Order(
             new OrderId(orderId),
             new OrderCustomerId(customerId),
-            OrderStatus.CONFIRMED,
+            OrderStatus.PAID,
             new OrderTotalAmount(new BigDecimal("350000")),
             new OrderShippingAddress("Avenida Caracas #30-15"),
             new OrderShippingDepartment("Cundinamarca"),
             new OrderShippingCity("Bogota D.C."),
             new OrderCreatedAt(now),
+            null,
+            null,
+            null,
             null);
 
     OrderEntity entity = mapper.toEntity(domain);
@@ -96,7 +102,7 @@ class OrderMapperTest {
     assertThat(entity).isNotNull();
     assertThat(entity.getId()).isEqualTo(orderId);
     assertThat(entity.getCustomerId()).isEqualTo(customerId);
-    assertThat(entity.getStatus()).isEqualTo("CONFIRMED");
+    assertThat(entity.getStatus()).isEqualTo("PAID");
     assertThat(entity.getTotalAmount()).isEqualByComparingTo(new BigDecimal("350000"));
     assertThat(entity.getShippingAddress()).isEqualTo("Avenida Caracas #30-15");
     assertThat(entity.getShippingDepartment()).isEqualTo("Cundinamarca");
@@ -122,7 +128,10 @@ class OrderMapperTest {
             new OrderShippingDepartment("Bogota"),
             new OrderShippingCity("Bogota D.C."),
             new OrderCreatedAt(now),
-            new OrderUpdatedAt(updatedAt));
+            new OrderUpdatedAt(updatedAt),
+            null,
+            null,
+            null);
 
     OrderEntity entity = mapper.toEntity(domain);
 
@@ -149,7 +158,7 @@ class OrderMapperTest {
     assertThat(domain.getId()).isNotNull();
     assertThat(domain.getId().getValue()).isNotNull();
     assertThat(domain.getCustomerId().getValue()).isEqualTo(request.getCustomerId());
-    assertThat(domain.getStatus()).isEqualTo(OrderStatus.PENDING);
+    assertThat(domain.getStatus()).isEqualTo(OrderStatus.PENDING_PAYMENT);
     assertThat(domain.getTotalAmount().getValue()).isEqualByComparingTo(new BigDecimal("180000"));
     assertThat(domain.getShippingAddress().getValue()).isEqualTo("Calle 50 #10-25");
     assertThat(domain.getShippingDepartment().getValue()).isEqualTo("Valle del Cauca");
@@ -179,6 +188,9 @@ class OrderMapperTest {
             new OrderShippingDepartment("Bogota"),
             new OrderShippingCity("Usaquen"),
             new OrderCreatedAt(now),
+            null,
+            null,
+            null,
             null);
 
     OrderResponse response = mapper.toResponse(domain);
@@ -212,7 +224,10 @@ class OrderMapperTest {
             new OrderShippingDepartment("Bogota"),
             new OrderShippingCity("Chapinero"),
             new OrderCreatedAt(now),
-            new OrderUpdatedAt(updatedAt));
+            new OrderUpdatedAt(updatedAt),
+            null,
+            null,
+            null);
 
     OrderResponse response = mapper.toResponse(domain);
 
@@ -240,6 +255,9 @@ class OrderMapperTest {
               new OrderShippingDepartment("Bogota"),
               new OrderShippingCity("Bogota D.C."),
               new OrderCreatedAt(Timestamp.from(Instant.now())),
+              null,
+              null,
+              null,
               null);
 
       OrderEntity entity = mapper.toEntity(domain);

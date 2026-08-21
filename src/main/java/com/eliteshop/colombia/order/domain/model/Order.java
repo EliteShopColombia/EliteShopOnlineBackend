@@ -16,4 +16,7 @@ public class Order {
   @NonNull private final OrderShippingCity shippingCity;
   @NonNull private final OrderCreatedAt createdAt;
   private final OrderUpdatedAt updatedAt;
+  private final String trackingNumber;
+  private final String shippingCarrier;
+  private final String shippingLabelUrl;
 }
