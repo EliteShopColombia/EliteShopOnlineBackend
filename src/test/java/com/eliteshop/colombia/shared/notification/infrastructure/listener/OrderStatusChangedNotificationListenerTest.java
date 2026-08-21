@@ -32,7 +32,7 @@ class OrderStatusChangedNotificationListenerTest {
 
     OrderStatusChangedEvent event =
         new OrderStatusChangedEvent(
-            orderId, customerId, "PENDING", "CONFIRMED", java.time.Instant.now());
+            orderId, customerId, "PENDING_PAYMENT", "PAID", java.time.Instant.now());
 
     listener.handleOrderStatusChanged(event);
 
@@ -46,7 +46,7 @@ class OrderStatusChangedNotificationListenerTest {
 
     OrderStatusChangedEvent event =
         new OrderStatusChangedEvent(
-            orderId, customerId, "PENDING", "SHIPPED", java.time.Instant.now());
+            orderId, customerId, "PENDING_PAYMENT", "SHIPPED", java.time.Instant.now());
 
     listener.handleOrderStatusChanged(event);
 
@@ -57,7 +57,7 @@ class OrderStatusChangedNotificationListenerTest {
                 message ->
                     message.contains(orderId.toString())
                         && message.contains(customerId.toString())
-                        && message.contains("PENDING")
+                        && message.contains("PENDING_PAYMENT")
                         && message.contains("SHIPPED")));
   }
 
@@ -66,7 +66,7 @@ class OrderStatusChangedNotificationListenerTest {
     UUID orderId = UUID.randomUUID();
     UUID customerId = UUID.randomUUID();
 
-    String[] statuses = {"PENDING", "CONFIRMED", "SHIPPED", "DELIVERED", "CANCELLED"};
+    String[] statuses = {"PENDING_PAYMENT", "PAID", "SHIPPED", "DELIVERED", "CANCELLED"};
 
     for (int i = 0; i < statuses.length - 1; i++) {
       reset(slackWebhookAdapter);

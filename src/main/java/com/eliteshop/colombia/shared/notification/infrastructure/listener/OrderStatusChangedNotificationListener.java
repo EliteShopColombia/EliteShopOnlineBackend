@@ -47,14 +47,22 @@ public class OrderStatusChangedNotificationListener {
             TIME_FORMATTER.format(event.occurredAt()));
 
     slackWebhookAdapter.sendToChannel("notifications-test", message);
+
+    log.info("Notificacion de cambio de estado enviada para orderId={}", event.orderId());
   }
 
   private String getStatusEmoji(String status) {
     return switch (status) {
-      case "CONFIRMED" -> ":white_check_mark:";
+      case "PENDING_PAYMENT" -> ":clock1:";
+      case "PAID" -> ":white_check_mark:";
+      case "IN_PREPARATION" -> ":package:";
       case "SHIPPED" -> ":truck:";
+      case "OUT_FOR_DELIVERY" -> ":motor_scooter:";
       case "DELIVERED" -> ":gift:";
+      case "COMPLETED" -> ":tada:";
       case "CANCELLED" -> ":x:";
+      case "DISPUTE" -> ":warning:";
+      case "REFUNDED" -> ":money_with_wings:";
       default -> ":hourglass_flowing_sand:";
     };
   }

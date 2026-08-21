@@ -72,6 +72,29 @@ public class GlobalExceptionHandler {
       return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
     }
 
+    if (ex instanceof com.eliteshop.colombia.cart.domain.exception.CartNotFoundException
+        || ex instanceof com.eliteshop.colombia.cart.domain.exception.CartItemNotFoundException
+        || ex instanceof com.eliteshop.colombia.payment.domain.exception.PaymentNotFoundException) {
+      response.put("status", HttpStatus.NOT_FOUND.value());
+      return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+    }
+
+    if (ex instanceof com.eliteshop.colombia.checkout.domain.exception.InsufficientStockException) {
+      response.put("status", HttpStatus.CONFLICT.value());
+      return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+    }
+
+    if (ex
+        instanceof com.eliteshop.colombia.checkout.domain.exception.CannotBuyOwnProductException) {
+      response.put("status", HttpStatus.FORBIDDEN.value());
+      return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+    }
+
+    if (ex instanceof com.eliteshop.colombia.checkout.domain.exception.PaymentFailedException) {
+      response.put("status", HttpStatus.PAYMENT_REQUIRED.value());
+      return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED).body(response);
+    }
+
     response.put("status", HttpStatus.BAD_REQUEST.value());
     return ResponseEntity.badRequest().body(response);
   }
