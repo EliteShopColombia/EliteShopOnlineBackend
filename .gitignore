@@ -64,7 +64,9 @@ HELP.md
 INTEGRATION.md
 docs/
 graphify-out/
-
+AGENTS.md
+.agents
+skills-lock.json
 # ---------- Test ----------
 *.h2.db
 *.mv.db
