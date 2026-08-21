@@ -54,7 +54,8 @@ public class AuthMapper {
         info);
   }
 
-  public AuthResponse toAuthResponse(Customer customer, String token, long expiration) {
+  public AuthResponse toAuthResponse(
+      Customer customer, String token, long expiration, String role) {
     return new AuthResponse(
         token,
         expiration,
@@ -63,6 +64,6 @@ public class AuthMapper {
             customer.getEmail().getValue(),
             customer.getFirstName().getValue(),
             customer.getLastName().getValue(),
-            "customer"));
+            role));
   }
 }

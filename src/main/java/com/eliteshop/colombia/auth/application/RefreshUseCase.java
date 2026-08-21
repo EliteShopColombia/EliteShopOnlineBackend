@@ -8,7 +8,9 @@ import com.eliteshop.colombia.customer.domain.repository.CustomerRepository;
 import io.jsonwebtoken.Claims;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @RequiredArgsConstructor
 public class RefreshUseCase {
 
@@ -16,11 +18,21 @@ public class RefreshUseCase {
   private final JwtService jwtService;
 
   public Customer execute(String token) {
-    Claims claims = jwtService.validateToken(token);
-    UUID userId = UUID.fromString(claims.getSubject());
+    log.info("Iniciando refresh de token");
+    try {
+      Claims claims = jwtService.validateToken(token);
+      UUID userId = UUID.fromString(claims.getSubject());
 
-    return customerRepository
-        .findById(new CustomerId(userId))
-        .orElseThrow(() -> new InvalidCredentialsException("User not found"));
+      Customer customer =
+          customerRepository
+              .findById(new CustomerId(userId))
+              .orElseThrow(() -> new InvalidCredentialsException("User not found"));
+
+      log.info("Refresh exitoso para userId: {}", userId);
+      return customer;
+    } catch (InvalidCredentialsException e) {
+      log.error("Error en refresh de token: {}", e.getMessage());
+      throw e;
+    }
   }
 }

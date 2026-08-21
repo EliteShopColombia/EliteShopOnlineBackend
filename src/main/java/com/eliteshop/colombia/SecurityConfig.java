@@ -35,12 +35,21 @@ public class SecurityConfig {
                         "/health",
                         "/api/v1/products",
                         "/api/v1/products/{id}",
+                        "/api/v1/products/images/**",
                         "/api/v1/reviews",
                         "/api/v1/reviews/{id}",
                         "/api/v1/reviews/product/{productId}",
                         "/api/v1/sellers",
                         "/api/v1/sellers/{id}")
                     .permitAll()
+                    .requestMatchers(
+                        "/api/v1/cart/**",
+                        "/api/v1/checkout",
+                        "/api/v1/payment-methods/**",
+                        "/api/v1/payments/**")
+                    .hasAnyRole("CUSTOMER", "SELLER")
+                    .requestMatchers("/api/v1/reviews")
+                    .hasAnyRole("CUSTOMER", "SELLER")
                     .anyRequest()
                     .authenticated())
         .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

@@ -9,6 +9,7 @@ import com.eliteshop.colombia.auth.infrastructure.controller.dto.LoginRequest;
 import com.eliteshop.colombia.auth.infrastructure.controller.dto.RegisterRequest;
 import com.eliteshop.colombia.auth.infrastructure.mapper.AuthMapper;
 import com.eliteshop.colombia.customer.domain.model.Customer;
+import com.eliteshop.colombia.seller.domain.repository.SellerRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -29,6 +30,7 @@ public class AuthController {
   private final RefreshUseCase refreshUseCase;
   private final JwtService jwtService;
   private final AuthMapper authMapper;
+  private final SellerRepository sellerRepository;
 
   @PostMapping("/register")
   public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
@@ -38,17 +40,25 @@ public class AuthController {
         jwtService.generateToken(
             customer.getId().getValue().toString(), customer.getEmail().getValue(), "customer");
     return ResponseEntity.status(HttpStatus.CREATED)
-        .body(authMapper.toAuthResponse(customer, token, jwtService.getExpiration()));
+        .body(authMapper.toAuthResponse(customer, token, jwtService.getExpiration(), "customer"));
   }
 
   @PostMapping("/login")
   public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
     Customer customer = loginUseCase.execute(request.getEmail(), request.getPassword());
+    String role = resolveRole(customer.getEmail().getValue());
+    String sellerId =
+        role.equals("seller")
+            ? sellerRepository
+                .findByEmail(customer.getEmail().getValue())
+                .map(s -> s.getId().getValue().toString())
+                .orElse(null)
+            : null;
     String token =
         jwtService.generateToken(
-            customer.getId().getValue().toString(), customer.getEmail().getValue(), "customer");
+            customer.getId().getValue().toString(), customer.getEmail().getValue(), role, sellerId);
     return ResponseEntity.ok(
-        authMapper.toAuthResponse(customer, token, jwtService.getExpiration()));
+        authMapper.toAuthResponse(customer, token, jwtService.getExpiration(), role));
   }
 
   @PostMapping("/refresh")
@@ -56,10 +66,22 @@ public class AuthController {
       @RequestHeader("Authorization") String authorization) {
     String token = authorization.replace("Bearer ", "");
     Customer customer = refreshUseCase.execute(token);
+    String role = resolveRole(customer.getEmail().getValue());
+    String sellerId =
+        role.equals("seller")
+            ? sellerRepository
+                .findByEmail(customer.getEmail().getValue())
+                .map(s -> s.getId().getValue().toString())
+                .orElse(null)
+            : null;
     String newToken =
         jwtService.generateToken(
-            customer.getId().getValue().toString(), customer.getEmail().getValue(), "customer");
+            customer.getId().getValue().toString(), customer.getEmail().getValue(), role, sellerId);
     return ResponseEntity.ok(
-        authMapper.toAuthResponse(customer, newToken, jwtService.getExpiration()));
+        authMapper.toAuthResponse(customer, newToken, jwtService.getExpiration(), role));
+  }
+
+  private String resolveRole(String email) {
+    return sellerRepository.findByEmail(email).isPresent() ? "seller" : "customer";
   }
 }

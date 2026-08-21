@@ -21,16 +21,26 @@ public class JwtService {
   private String issuer;
 
   public String generateToken(String userId, String email, String role) {
-    return Jwts.builder()
-        .subject(userId)
-        .claim("email", email)
-        .claim("role", role)
-        .issuer(issuer)
-        .issuedAt(new Date())
-        .expiration(new Date(System.currentTimeMillis() + expiration))
-        .id(UUID.randomUUID().toString())
-        .signWith(getSigningKey())
-        .compact();
+    return generateToken(userId, email, role, null);
+  }
+
+  public String generateToken(String userId, String email, String role, String sellerId) {
+    var builder =
+        Jwts.builder()
+            .subject(userId)
+            .claim("email", email)
+            .claim("role", role)
+            .issuer(issuer)
+            .issuedAt(new Date())
+            .expiration(new Date(System.currentTimeMillis() + expiration))
+            .id(UUID.randomUUID().toString())
+            .signWith(getSigningKey());
+
+    if (sellerId != null) {
+      builder.claim("sellerId", sellerId);
+    }
+
+    return builder.compact();
   }
 
   public Claims validateToken(String token) {

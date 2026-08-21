@@ -41,10 +41,14 @@ public class JwtAuthFilter extends OncePerRequestFilter {
       String userId = claims.getSubject();
       String email = claims.get("email", String.class);
       String role = claims.get("role", String.class);
+      String sellerId = claims.get("sellerId", String.class);
 
       request.setAttribute("gateway.userId", userId);
       request.setAttribute("gateway.userEmail", email);
       request.setAttribute("gateway.userRole", role);
+      if (sellerId != null) {
+        request.setAttribute("gateway.sellerId", sellerId);
+      }
 
       SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + role.toUpperCase());
       UsernamePasswordAuthenticationToken authentication =
