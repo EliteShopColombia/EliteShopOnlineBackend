@@ -18,4 +18,5 @@ public class CheckoutSessionRequest {
   private String customerEmail;
   private String paymentMethod;
   private Map<String, Object> billing;
+  private String responseUrl;
 }

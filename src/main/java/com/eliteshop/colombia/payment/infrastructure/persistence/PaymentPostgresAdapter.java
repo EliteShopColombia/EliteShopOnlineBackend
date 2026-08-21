@@ -40,6 +40,11 @@ public class PaymentPostgresAdapter implements PaymentRepository {
     return repository.findByInvoice(invoice).map(this::toDomain);
   }
 
+  @Override
+  public Optional<Payment> findByOrderId(UUID orderId) {
+    return repository.findByOrderId(orderId).map(this::toDomain);
+  }
+
   private PaymentEntity toEntity(Payment payment) {
     PaymentEntity entity = new PaymentEntity();
     entity.setId(payment.getId());

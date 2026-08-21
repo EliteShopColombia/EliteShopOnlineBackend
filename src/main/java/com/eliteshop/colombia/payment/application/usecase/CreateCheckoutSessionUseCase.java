@@ -3,6 +3,7 @@ package com.eliteshop.colombia.payment.application.usecase;
 import com.eliteshop.colombia.payment.domain.exception.PaymentAlreadyProcessedException;
 import com.eliteshop.colombia.payment.domain.model.*;
 import com.eliteshop.colombia.payment.domain.port.*;
+import com.eliteshop.colombia.payment.infrastructure.config.EpaycoProperties;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +15,7 @@ public class CreateCheckoutSessionUseCase {
 
   private final PaymentGateway paymentGateway;
   private final PaymentRepository paymentRepository;
+  private final EpaycoProperties epaycoProperties;
 
   public Mono<CheckoutSession> execute(CheckoutSessionRequest request) {
 
@@ -49,6 +51,7 @@ public class CreateCheckoutSessionUseCase {
                 .description("Pago de pedido")
                 .customerEmail(request.getCustomerEmail())
                 .billing(request.getBilling())
+                .responseUrl(epaycoProperties.getResponseUrl())
                 .build())
         .map(
             session -> {
@@ -93,6 +96,7 @@ public class CreateCheckoutSessionUseCase {
                 .description("Pago de pedido")
                 .customerEmail(request.getCustomerEmail())
                 .billing(request.getBilling())
+                .responseUrl(epaycoProperties.getResponseUrl())
                 .build())
         .map(
             session -> {

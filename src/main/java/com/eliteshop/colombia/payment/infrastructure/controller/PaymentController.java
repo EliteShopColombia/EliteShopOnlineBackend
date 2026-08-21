@@ -19,6 +19,8 @@ public class PaymentController {
 
   private final CreateCheckoutSessionUseCase createCheckoutSessionUseCase;
   private final ConfirmPaymentUseCase confirmPaymentUseCase;
+  private final RetryPaymentUseCase retryPaymentUseCase;
+  private final RetryWithSavedCardUseCase retryWithSavedCardUseCase;
 
   @PostMapping("/checkout-session")
   public ResponseEntity<CreateCheckoutSessionResponse> createCheckoutSession(
@@ -90,5 +92,43 @@ public class PaymentController {
                             payment.getOrderId() != null ? payment.getOrderId().toString() : "")))
         .blockOptional()
         .orElse(ResponseEntity.notFound().build());
+  }
+
+  @PostMapping("/orders/{orderId}/retry")
+  public ResponseEntity<?> retryPayment(
+      @PathVariable UUID orderId, @RequestBody(required = false) RetryPaymentRequest request) {
+
+    log.info(
+        "Reintentando pago para orderId={}, paymentMethodId={}",
+        orderId,
+        request != null ? request.getPaymentMethodId() : "Smart Checkout");
+
+    if (request != null && request.getPaymentMethodId() != null) {
+      return retryWithSavedCardUseCase
+          .execute(orderId, request.getPaymentMethodId(), request.getCvv())
+          .map(
+              payment ->
+                  ResponseEntity.ok(
+                      Map.of(
+                          "status", payment.getStatus().name(),
+                          "invoice", payment.getInvoice() != null ? payment.getInvoice() : "",
+                          "refId",
+                              payment.getEpaycoRefId() != null ? payment.getEpaycoRefId() : "")))
+          .blockOptional()
+          .orElse(ResponseEntity.status(org.springframework.http.HttpStatus.BAD_REQUEST).build());
+    }
+
+    return retryPaymentUseCase
+        .execute(orderId)
+        .map(
+            session ->
+                ResponseEntity.ok(
+                    CreateCheckoutSessionResponse.builder()
+                        .sessionId(session.getSessionId())
+                        .token(session.getToken())
+                        .invoice(session.getInvoice())
+                        .build()))
+        .blockOptional()
+        .orElse(ResponseEntity.status(org.springframework.http.HttpStatus.BAD_REQUEST).build());
   }
 }

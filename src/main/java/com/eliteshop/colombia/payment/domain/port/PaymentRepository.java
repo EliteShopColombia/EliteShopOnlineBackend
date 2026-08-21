@@ -14,4 +14,6 @@ public interface PaymentRepository {
   Optional<Payment> findBySessionId(String sessionId);
 
   Optional<Payment> findByInvoice(String invoice);
+
+  Optional<Payment> findByOrderId(UUID orderId);
 }

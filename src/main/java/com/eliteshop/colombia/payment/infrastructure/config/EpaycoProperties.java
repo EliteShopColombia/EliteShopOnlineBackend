@@ -21,6 +21,10 @@ public class EpaycoProperties {
   @NotBlank(message = "La apifyBaseUrl de ePayco es requerida")
   private String apifyBaseUrl;
 
+  private String apiBaseUrl = "https://api.secure.payco.co";
+
+  private String responseUrl = "http://localhost:5173/order";
+
   public boolean isSandbox() {
     return "sandbox".equals(environment);
   }

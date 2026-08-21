@@ -8,6 +8,7 @@ import com.eliteshop.colombia.payment.domain.exception.PaymentAlreadyProcessedEx
 import com.eliteshop.colombia.payment.domain.model.*;
 import com.eliteshop.colombia.payment.domain.port.PaymentGateway;
 import com.eliteshop.colombia.payment.domain.port.PaymentRepository;
+import com.eliteshop.colombia.payment.infrastructure.config.EpaycoProperties;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -31,7 +32,9 @@ class CreateCheckoutSessionUseCaseTest {
 
   @BeforeEach
   void setUp() {
-    useCase = new CreateCheckoutSessionUseCase(paymentGateway, paymentRepository);
+    EpaycoProperties epaycoProperties = new EpaycoProperties();
+    epaycoProperties.setResponseUrl("http://localhost:5173/order");
+    useCase = new CreateCheckoutSessionUseCase(paymentGateway, paymentRepository, epaycoProperties);
   }
 
   @Test
