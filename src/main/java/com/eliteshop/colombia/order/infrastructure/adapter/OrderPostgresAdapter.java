@@ -2,9 +2,11 @@ package com.eliteshop.colombia.order.infrastructure.adapter;
 
 import com.eliteshop.colombia.order.domain.model.Order;
 import com.eliteshop.colombia.order.domain.model.OrderId;
+import com.eliteshop.colombia.order.domain.model.OrderStatus;
 import com.eliteshop.colombia.order.domain.repository.OrderRepository;
 import com.eliteshop.colombia.order.infrastructure.mapper.OrderMapper;
 import com.eliteshop.colombia.order.infrastructure.persistence.OrderJpaRepository;
+import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -44,6 +46,14 @@ public class OrderPostgresAdapter implements OrderRepository {
     existingEntity.setShippingLabelUrl(order.getShippingLabelUrl());
 
     jpaRepository.save(existingEntity);
+  }
+
+  @Override
+  public boolean updateStatusIfCurrent(
+      OrderId orderId, OrderStatus currentStatus, OrderStatus newStatus, Timestamp updatedAt) {
+    return jpaRepository.updateStatusIfCurrent(
+            orderId.getValue(), currentStatus.name(), newStatus.name(), updatedAt)
+        == 1;
   }
 
   @Override

@@ -31,6 +31,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -706,10 +707,10 @@ class OrderControllerTest {
     UUID orderId = UUID.randomUUID();
 
     mockMvc
-        .perform(patch("/api/v1/orders/{id}/dispute", orderId))
+        .perform(patch("/api/v1/orders/{id}/dispute", orderId).principal(authentication()))
         .andExpect(status().isNoContent());
 
-    verify(disputeOrderUseCase).execute(any(OrderId.class));
+    verify(disputeOrderUseCase).execute(any(OrderId.class), any(UUID.class));
   }
 
   @Test
@@ -718,9 +719,11 @@ class OrderControllerTest {
 
     doThrow(new OrderNotFoundException("The order not exist in our platform"))
         .when(disputeOrderUseCase)
-        .execute(any(OrderId.class));
+        .execute(any(OrderId.class), any(UUID.class));
 
-    mockMvc.perform(patch("/api/v1/orders/{id}/dispute", orderId)).andExpect(status().isNotFound());
+    mockMvc
+        .perform(patch("/api/v1/orders/{id}/dispute", orderId).principal(authentication()))
+        .andExpect(status().isNotFound());
   }
 
   @Test
@@ -731,10 +734,10 @@ class OrderControllerTest {
             new InvalidOrderStatusTransitionException(
                 "Cannot open dispute for order with status: PENDING_PAYMENT"))
         .when(disputeOrderUseCase)
-        .execute(any(OrderId.class));
+        .execute(any(OrderId.class), any(UUID.class));
 
     mockMvc
-        .perform(patch("/api/v1/orders/{id}/dispute", orderId))
+        .perform(patch("/api/v1/orders/{id}/dispute", orderId).principal(authentication()))
         .andExpect(status().isBadRequest());
   }
 
@@ -742,9 +745,11 @@ class OrderControllerTest {
   void shouldRefundOrder() throws Exception {
     UUID orderId = UUID.randomUUID();
 
-    mockMvc.perform(patch("/api/v1/orders/{id}/refund", orderId)).andExpect(status().isNoContent());
+    mockMvc
+        .perform(patch("/api/v1/orders/{id}/refund", orderId).principal(authentication()))
+        .andExpect(status().isNoContent());
 
-    verify(refundOrderUseCase).execute(any(OrderId.class));
+    verify(refundOrderUseCase).execute(any(OrderId.class), any(UUID.class));
   }
 
   @Test
@@ -753,9 +758,11 @@ class OrderControllerTest {
 
     doThrow(new OrderNotFoundException("The order not exist in our platform"))
         .when(refundOrderUseCase)
-        .execute(any(OrderId.class));
+        .execute(any(OrderId.class), any(UUID.class));
 
-    mockMvc.perform(patch("/api/v1/orders/{id}/refund", orderId)).andExpect(status().isNotFound());
+    mockMvc
+        .perform(patch("/api/v1/orders/{id}/refund", orderId).principal(authentication()))
+        .andExpect(status().isNotFound());
   }
 
   @Test
@@ -766,11 +773,15 @@ class OrderControllerTest {
             new InvalidOrderStatusTransitionException(
                 "Only DISPUTE orders can be refunded, current status: SHIPPED"))
         .when(refundOrderUseCase)
-        .execute(any(OrderId.class));
+        .execute(any(OrderId.class), any(UUID.class));
 
     mockMvc
-        .perform(patch("/api/v1/orders/{id}/refund", orderId))
+        .perform(patch("/api/v1/orders/{id}/refund", orderId).principal(authentication()))
         .andExpect(status().isBadRequest());
+  }
+
+  private UsernamePasswordAuthenticationToken authentication() {
+    return new UsernamePasswordAuthenticationToken(UUID.randomUUID().toString(), null);
   }
 
   @Test

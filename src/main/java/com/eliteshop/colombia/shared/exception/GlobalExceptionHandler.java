@@ -90,6 +90,11 @@ public class GlobalExceptionHandler {
       return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
     }
 
+    if (ex instanceof com.eliteshop.colombia.order.domain.exception.OrderAccessDeniedException) {
+      response.put("status", HttpStatus.FORBIDDEN.value());
+      return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+    }
+
     if (ex instanceof com.eliteshop.colombia.checkout.domain.exception.PaymentFailedException) {
       response.put("status", HttpStatus.PAYMENT_REQUIRED.value());
       return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED).body(response);

@@ -34,6 +34,7 @@ class RefundOrderUseCaseTest {
   @BeforeEach
   void setUp() {
     useCase = new RefundOrderUseCase(repository, eventPublisher);
+    lenient().when(repository.updateStatusIfCurrent(any(), any(), any(), any())).thenReturn(true);
   }
 
   @Test
@@ -45,11 +46,10 @@ class RefundOrderUseCaseTest {
 
     when(repository.findById(any(OrderId.class))).thenReturn(Optional.of(order));
 
-    useCase.execute(new OrderId(orderId));
+    useCase.execute(new OrderId(orderId), customerId);
 
-    ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
-    verify(repository).update(orderCaptor.capture());
-    assertThat(orderCaptor.getValue().getStatus()).isEqualTo(OrderStatus.REFUNDED);
+    verify(repository)
+        .updateStatusIfCurrent(any(), eq(OrderStatus.DISPUTE), eq(OrderStatus.REFUNDED), any());
 
     ArgumentCaptor<OrderStatusChangedEvent> eventCaptor =
         ArgumentCaptor.forClass(OrderStatusChangedEvent.class);
@@ -63,10 +63,10 @@ class RefundOrderUseCaseTest {
     UUID orderId = UUID.randomUUID();
     when(repository.findById(any(OrderId.class))).thenReturn(Optional.empty());
 
-    assertThatThrownBy(() -> useCase.execute(new OrderId(orderId)))
+    assertThatThrownBy(() -> useCase.execute(new OrderId(orderId), UUID.randomUUID()))
         .isInstanceOf(OrderNotFoundException.class);
 
-    verify(repository, never()).update(any());
+    verify(repository, never()).updateStatusIfCurrent(any(), any(), any(), any());
   }
 
   @Test
@@ -78,7 +78,7 @@ class RefundOrderUseCaseTest {
 
     when(repository.findById(any(OrderId.class))).thenReturn(Optional.of(order));
 
-    assertThatThrownBy(() -> useCase.execute(new OrderId(orderId)))
+    assertThatThrownBy(() -> useCase.execute(new OrderId(orderId), customerId))
         .isInstanceOf(InvalidOrderStatusTransitionException.class)
         .hasMessageContaining("Only DISPUTE orders can be refunded");
 
@@ -94,7 +94,7 @@ class RefundOrderUseCaseTest {
 
     when(repository.findById(any(OrderId.class))).thenReturn(Optional.of(order));
 
-    assertThatThrownBy(() -> useCase.execute(new OrderId(orderId)))
+    assertThatThrownBy(() -> useCase.execute(new OrderId(orderId), customerId))
         .isInstanceOf(InvalidOrderStatusTransitionException.class)
         .hasMessageContaining("Only DISPUTE orders can be refunded");
   }

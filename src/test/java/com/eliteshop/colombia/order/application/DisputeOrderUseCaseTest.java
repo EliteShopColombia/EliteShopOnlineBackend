@@ -34,6 +34,7 @@ class DisputeOrderUseCaseTest {
   @BeforeEach
   void setUp() {
     useCase = new DisputeOrderUseCase(repository, eventPublisher);
+    lenient().when(repository.updateStatusIfCurrent(any(), any(), any(), any())).thenReturn(true);
   }
 
   @Test
@@ -46,11 +47,11 @@ class DisputeOrderUseCaseTest {
 
     when(repository.findById(any(OrderId.class))).thenReturn(Optional.of(order));
 
-    useCase.execute(new OrderId(orderId));
+    useCase.execute(new OrderId(orderId), customerId);
 
-    ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
-    verify(repository).update(orderCaptor.capture());
-    assertThat(orderCaptor.getValue().getStatus()).isEqualTo(OrderStatus.DISPUTE);
+    verify(repository)
+        .updateStatusIfCurrent(
+            any(), eq(OrderStatus.IN_PREPARATION), eq(OrderStatus.DISPUTE), any());
 
     ArgumentCaptor<OrderStatusChangedEvent> eventCaptor =
         ArgumentCaptor.forClass(OrderStatusChangedEvent.class);
@@ -68,11 +69,10 @@ class DisputeOrderUseCaseTest {
 
     when(repository.findById(any(OrderId.class))).thenReturn(Optional.of(order));
 
-    useCase.execute(new OrderId(orderId));
+    useCase.execute(new OrderId(orderId), customerId);
 
-    ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
-    verify(repository).update(orderCaptor.capture());
-    assertThat(orderCaptor.getValue().getStatus()).isEqualTo(OrderStatus.DISPUTE);
+    verify(repository)
+        .updateStatusIfCurrent(any(), eq(OrderStatus.SHIPPED), eq(OrderStatus.DISPUTE), any());
   }
 
   @Test
@@ -84,22 +84,37 @@ class DisputeOrderUseCaseTest {
 
     when(repository.findById(any(OrderId.class))).thenReturn(Optional.of(order));
 
-    useCase.execute(new OrderId(orderId));
+    useCase.execute(new OrderId(orderId), customerId);
 
-    ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
-    verify(repository).update(orderCaptor.capture());
-    assertThat(orderCaptor.getValue().getStatus()).isEqualTo(OrderStatus.DISPUTE);
+    verify(repository)
+        .updateStatusIfCurrent(any(), eq(OrderStatus.DELIVERED), eq(OrderStatus.DISPUTE), any());
+  }
+
+  @Test
+  void shouldOpenDisputeForCompletedOrder() {
+    UUID orderId = UUID.randomUUID();
+    UUID customerId = UUID.randomUUID();
+
+    Order order = buildOrder(orderId, customerId, OrderStatus.COMPLETED, new BigDecimal("200000"));
+
+    when(repository.findById(any(OrderId.class))).thenReturn(Optional.of(order));
+
+    useCase.execute(new OrderId(orderId), customerId);
+
+    verify(repository)
+        .updateStatusIfCurrent(any(), eq(OrderStatus.COMPLETED), eq(OrderStatus.DISPUTE), any());
   }
 
   @Test
   void shouldThrowWhenOrderNotFound() {
     UUID orderId = UUID.randomUUID();
+    UUID customerId = UUID.randomUUID();
     when(repository.findById(any(OrderId.class))).thenReturn(Optional.empty());
 
-    assertThatThrownBy(() -> useCase.execute(new OrderId(orderId)))
+    assertThatThrownBy(() -> useCase.execute(new OrderId(orderId), customerId))
         .isInstanceOf(OrderNotFoundException.class);
 
-    verify(repository, never()).update(any());
+    verify(repository, never()).updateStatusIfCurrent(any(), any(), any(), any());
   }
 
   @Test
@@ -112,11 +127,11 @@ class DisputeOrderUseCaseTest {
 
     when(repository.findById(any(OrderId.class))).thenReturn(Optional.of(order));
 
-    assertThatThrownBy(() -> useCase.execute(new OrderId(orderId)))
+    assertThatThrownBy(() -> useCase.execute(new OrderId(orderId), customerId))
         .isInstanceOf(InvalidOrderStatusTransitionException.class)
         .hasMessageContaining("Cannot open dispute for order with status");
 
-    verify(repository, never()).update(any());
+    verify(repository, never()).updateStatusIfCurrent(any(), any(), any(), any());
   }
 
   @Test
@@ -128,7 +143,7 @@ class DisputeOrderUseCaseTest {
 
     when(repository.findById(any(OrderId.class))).thenReturn(Optional.of(order));
 
-    assertThatThrownBy(() -> useCase.execute(new OrderId(orderId)))
+    assertThatThrownBy(() -> useCase.execute(new OrderId(orderId), customerId))
         .isInstanceOf(InvalidOrderStatusTransitionException.class)
         .hasMessageContaining("Cannot open dispute for order with status");
   }

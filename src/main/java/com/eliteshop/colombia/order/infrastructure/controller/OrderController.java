@@ -46,6 +46,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -250,14 +251,14 @@ public class OrderController {
   }
 
   @PatchMapping("/{id}/dispute")
-  public ResponseEntity<Void> dispute(@PathVariable UUID id) {
-    disputeOrderUseCase.execute(new OrderId(id));
+  public ResponseEntity<Void> dispute(@PathVariable UUID id, Authentication authentication) {
+    disputeOrderUseCase.execute(new OrderId(id), UUID.fromString(authentication.getName()));
     return ResponseEntity.noContent().build();
   }
 
   @PatchMapping("/{id}/refund")
-  public ResponseEntity<Void> refund(@PathVariable UUID id) {
-    refundOrderUseCase.execute(new OrderId(id));
+  public ResponseEntity<Void> refund(@PathVariable UUID id, Authentication authentication) {
+    refundOrderUseCase.execute(new OrderId(id), UUID.fromString(authentication.getName()));
     return ResponseEntity.noContent().build();
   }
 
