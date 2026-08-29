@@ -18,3 +18,17 @@ databaseChangeLog:
                   name: shipping_label_url
                   type: varchar(500)
                   remarks: URL del PDF de la etiqueta de envio
+  - changeSet:
+      id: 016-create-uuid-ossp-extension
+      author: eliteshop
+      preconditions:
+        - onFail: MARK_RAN
+        - sqlCheck:
+            expectedResult: "0"
+            sql: "SELECT count(*) FROM pg_extension WHERE extname = 'uuid-ossp'"
+      changes:
+        - sql:
+            sql: CREATE EXTENSION IF NOT EXISTS "uuid-ossp"
+      rollback:
+        - sql:
+            sql: DROP EXTENSION IF EXISTS "uuid-ossp"

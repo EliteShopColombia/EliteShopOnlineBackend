@@ -2,6 +2,11 @@ databaseChangeLog:
   - changeSet:
       id: 012-drop-legacy-cart-order-tables
       author: eliteshop
+      preconditions:
+        - onFail: MARK_RAN
+        - sqlCheck:
+            expectedResult: "1"
+            sql: "SELECT count(*) FROM information_schema.tables WHERE table_name IN ('cart_item', 'cart', 'order_item') AND table_schema = current_schema()"
       changes:
         - sql:
             sql: |

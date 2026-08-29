@@ -1,0 +1,12 @@
+databaseChangeLog:
+  - changeSet:
+      id: 022-add-seller-profile-image
+      author: eliteshop
+      changes:
+        - addColumn:
+            tableName: seller
+            columns:
+              - column:
+                  name: seller_profile_image
+                  type: varchar(500)
+                  remarks: URL or object key of the seller's profile image

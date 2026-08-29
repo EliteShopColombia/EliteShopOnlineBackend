@@ -20,10 +20,16 @@ databaseChangeLog:
   - include:
       file: db/migrations/013-add-epayco-customer-id-to-customer-payment-method.yaml
   - include:
-      file: db/migrations/014-add-customer-is-active.yaml
-  - include:
-      file: db/migrations/015-drop-customer-is-active.yaml
-  - include:
       file: db/migrations/016-add-shipping-fields-to-orders.yaml
   - include:
       file: db/migrations/017-create-tracking-events.yaml
+  - include:
+      file: db/migrations/018-add-dispute-reason-to-orders.yaml
+  - include:
+      file: db/migrations/019-fix-payment-info-schema.yaml
+  - include:
+      file: db/migrations/020-fix-constraints-and-indexes.yaml
+  - include:
+      file: db/migrations/021-cleanup-and-extensions.yaml
+  - include:
+      file: db/migrations/022-add-seller-profile-image.yaml

@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - changeSet:
+      id: 018-add-dispute-reason-to-orders
+      author: eliteshop
+      changes:
+        - addColumn:
+            tableName: orders
+            columns:
+              - column:
+                  name: dispute_reason
+                  type: varchar(50)
+                  constraints:
+                    nullable: true
