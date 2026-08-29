@@ -48,7 +48,7 @@ public class OrderStatusChangedNotificationListener {
 
     slackWebhookAdapter.sendToChannel("notifications-test", message);
 
-    log.info("Notificacion de cambio de estado enviada para orderId={}", event.orderId());
+    log.info("Notificación de cambio de estado enviada para orderId={}", event.orderId());
   }
 
   private String getStatusEmoji(String status) {

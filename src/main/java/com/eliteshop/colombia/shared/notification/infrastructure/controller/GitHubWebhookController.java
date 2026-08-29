@@ -48,6 +48,9 @@ public class GitHubWebhookController {
         log.warn("Firma HMAC inválida - webhook rechazado");
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Firma inválida");
       }
+    } else {
+      log.error("GitHub webhook secret no configurado, rechazando webhook");
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Secret no configurado");
     }
 
     try {
