@@ -53,6 +53,7 @@ class AddTrackingEventUseCaseTest {
             null,
             null,
             null,
+            null,
             null);
 
     when(orderRepository.findById(any(OrderId.class))).thenReturn(Optional.of(order));
@@ -108,6 +109,7 @@ class AddTrackingEventUseCaseTest {
             new OrderShippingDepartment("Bogota"),
             new OrderShippingCity("Bogota"),
             new OrderCreatedAt(Timestamp.from(Instant.now())),
+            null,
             null,
             null,
             null,

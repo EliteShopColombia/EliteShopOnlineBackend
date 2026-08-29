@@ -88,6 +88,7 @@ class OrderDeleteUseCaseTest {
         null,
         null,
         null,
+        null,
         null);
   }
 }

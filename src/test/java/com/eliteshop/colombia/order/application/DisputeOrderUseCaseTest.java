@@ -35,6 +35,7 @@ class DisputeOrderUseCaseTest {
   void setUp() {
     useCase = new DisputeOrderUseCase(repository, eventPublisher);
     lenient().when(repository.updateStatusIfCurrent(any(), any(), any(), any())).thenReturn(true);
+    lenient().doNothing().when(repository).updateDisputeReason(any(), any());
   }
 
   @Test
@@ -47,7 +48,7 @@ class DisputeOrderUseCaseTest {
 
     when(repository.findById(any(OrderId.class))).thenReturn(Optional.of(order));
 
-    useCase.execute(new OrderId(orderId), customerId);
+    useCase.execute(new OrderId(orderId), customerId, DisputeReason.NO_LONGER_NEEDED);
 
     verify(repository)
         .updateStatusIfCurrent(
@@ -69,7 +70,7 @@ class DisputeOrderUseCaseTest {
 
     when(repository.findById(any(OrderId.class))).thenReturn(Optional.of(order));
 
-    useCase.execute(new OrderId(orderId), customerId);
+    useCase.execute(new OrderId(orderId), customerId, DisputeReason.NO_LONGER_NEEDED);
 
     verify(repository)
         .updateStatusIfCurrent(any(), eq(OrderStatus.SHIPPED), eq(OrderStatus.DISPUTE), any());
@@ -84,7 +85,7 @@ class DisputeOrderUseCaseTest {
 
     when(repository.findById(any(OrderId.class))).thenReturn(Optional.of(order));
 
-    useCase.execute(new OrderId(orderId), customerId);
+    useCase.execute(new OrderId(orderId), customerId, DisputeReason.NO_LONGER_NEEDED);
 
     verify(repository)
         .updateStatusIfCurrent(any(), eq(OrderStatus.DELIVERED), eq(OrderStatus.DISPUTE), any());
@@ -99,7 +100,7 @@ class DisputeOrderUseCaseTest {
 
     when(repository.findById(any(OrderId.class))).thenReturn(Optional.of(order));
 
-    useCase.execute(new OrderId(orderId), customerId);
+    useCase.execute(new OrderId(orderId), customerId, DisputeReason.NO_LONGER_NEEDED);
 
     verify(repository)
         .updateStatusIfCurrent(any(), eq(OrderStatus.COMPLETED), eq(OrderStatus.DISPUTE), any());
@@ -111,7 +112,8 @@ class DisputeOrderUseCaseTest {
     UUID customerId = UUID.randomUUID();
     when(repository.findById(any(OrderId.class))).thenReturn(Optional.empty());
 
-    assertThatThrownBy(() -> useCase.execute(new OrderId(orderId), customerId))
+    assertThatThrownBy(
+            () -> useCase.execute(new OrderId(orderId), customerId, DisputeReason.NO_LONGER_NEEDED))
         .isInstanceOf(OrderNotFoundException.class);
 
     verify(repository, never()).updateStatusIfCurrent(any(), any(), any(), any());
@@ -127,7 +129,8 @@ class DisputeOrderUseCaseTest {
 
     when(repository.findById(any(OrderId.class))).thenReturn(Optional.of(order));
 
-    assertThatThrownBy(() -> useCase.execute(new OrderId(orderId), customerId))
+    assertThatThrownBy(
+            () -> useCase.execute(new OrderId(orderId), customerId, DisputeReason.NO_LONGER_NEEDED))
         .isInstanceOf(InvalidOrderStatusTransitionException.class)
         .hasMessageContaining("Cannot open dispute for order with status");
 
@@ -143,7 +146,8 @@ class DisputeOrderUseCaseTest {
 
     when(repository.findById(any(OrderId.class))).thenReturn(Optional.of(order));
 
-    assertThatThrownBy(() -> useCase.execute(new OrderId(orderId), customerId))
+    assertThatThrownBy(
+            () -> useCase.execute(new OrderId(orderId), customerId, DisputeReason.NO_LONGER_NEEDED))
         .isInstanceOf(InvalidOrderStatusTransitionException.class)
         .hasMessageContaining("Cannot open dispute for order with status");
   }
@@ -159,6 +163,7 @@ class DisputeOrderUseCaseTest {
         new OrderShippingDepartment("Bogota"),
         new OrderShippingCity("Bogota D.C."),
         new OrderCreatedAt(Timestamp.from(Instant.now())),
+        null,
         null,
         null,
         null,

@@ -32,13 +32,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@ActiveProfiles("dev")
+@ActiveProfiles("test")
 class OrderAuthorizationReproductionTest {
 
   @Autowired private MockMvc mockMvc;
@@ -61,7 +62,7 @@ class OrderAuthorizationReproductionTest {
 
   @Test
   @WithMockUser(username = "00000000-0000-0000-0000-000000000001", roles = "CUSTOMER")
-  void customerCannotDisputeAnotherCustomersCompletedOrder() throws Exception {
+  void shouldDenyWhenDisputingAnotherOrder() throws Exception {
     UUID victimId = UUID.randomUUID();
     UUID orderId = UUID.randomUUID();
     createdCustomerId = victimId;
@@ -70,7 +71,10 @@ class OrderAuthorizationReproductionTest {
     orderRepository.save(buildOrder(orderId, victimId, OrderStatus.COMPLETED));
 
     mockMvc
-        .perform(patch("/api/v1/orders/{id}/dispute", orderId))
+        .perform(
+            patch("/api/v1/orders/{id}/dispute", orderId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"reason\":\"NO_LONGER_NEEDED\"}"))
         .andExpect(status().isForbidden());
 
     assertThat(orderRepository.findById(new OrderId(orderId)).orElseThrow().getStatus())
@@ -79,7 +83,7 @@ class OrderAuthorizationReproductionTest {
 
   @Test
   @WithMockUser(username = "00000000-0000-0000-0000-000000000001", roles = "CUSTOMER")
-  void customerCannotRefundAnotherCustomersDisputedOrder() throws Exception {
+  void shouldDenyWhenRefundingAnotherOrder() throws Exception {
     UUID victimId = UUID.randomUUID();
     UUID orderId = UUID.randomUUID();
     createdCustomerId = victimId;
@@ -103,6 +107,7 @@ class OrderAuthorizationReproductionTest {
         new OrderShippingDepartment("Bogota"),
         new OrderShippingCity("Bogota D.C."),
         new OrderCreatedAt(Timestamp.from(Instant.now())),
+        null,
         null,
         null,
         null,

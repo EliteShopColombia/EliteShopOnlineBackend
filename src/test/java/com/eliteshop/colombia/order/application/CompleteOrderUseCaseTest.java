@@ -34,6 +34,7 @@ class CompleteOrderUseCaseTest {
   @BeforeEach
   void setUp() {
     useCase = new CompleteOrderUseCase(repository, eventPublisher);
+    lenient().when(repository.updateStatusIfCurrent(any(), any(), any(), any())).thenReturn(true);
   }
 
   @Test
@@ -47,9 +48,8 @@ class CompleteOrderUseCaseTest {
 
     useCase.execute(new OrderId(orderId));
 
-    ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
-    verify(repository).update(orderCaptor.capture());
-    assertThat(orderCaptor.getValue().getStatus()).isEqualTo(OrderStatus.COMPLETED);
+    verify(repository)
+        .updateStatusIfCurrent(any(), eq(OrderStatus.DELIVERED), eq(OrderStatus.COMPLETED), any());
 
     ArgumentCaptor<OrderStatusChangedEvent> eventCaptor =
         ArgumentCaptor.forClass(OrderStatusChangedEvent.class);
@@ -66,7 +66,7 @@ class CompleteOrderUseCaseTest {
     assertThatThrownBy(() -> useCase.execute(new OrderId(orderId)))
         .isInstanceOf(OrderNotFoundException.class);
 
-    verify(repository, never()).update(any());
+    verify(repository, never()).updateStatusIfCurrent(any(), any(), any(), any());
   }
 
   @Test
@@ -82,7 +82,7 @@ class CompleteOrderUseCaseTest {
         .isInstanceOf(InvalidOrderStatusTransitionException.class)
         .hasMessageContaining("Only DELIVERED orders can be completed");
 
-    verify(repository, never()).update(any());
+    verify(repository, never()).updateStatusIfCurrent(any(), any(), any(), any());
   }
 
   @Test
@@ -110,6 +110,7 @@ class CompleteOrderUseCaseTest {
         new OrderShippingDepartment("Bogota"),
         new OrderShippingCity("Bogota D.C."),
         new OrderCreatedAt(Timestamp.from(Instant.now())),
+        null,
         null,
         null,
         null,

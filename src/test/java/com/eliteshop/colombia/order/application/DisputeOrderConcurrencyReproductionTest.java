@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import com.eliteshop.colombia.order.domain.event.OrderStatusChangedEvent;
+import com.eliteshop.colombia.order.domain.model.DisputeReason;
 import com.eliteshop.colombia.order.domain.model.Order;
 import com.eliteshop.colombia.order.domain.model.OrderCreatedAt;
 import com.eliteshop.colombia.order.domain.model.OrderCustomerId;
@@ -30,7 +31,7 @@ import org.springframework.context.ApplicationEventPublisher;
 class DisputeOrderConcurrencyReproductionTest {
 
   @Test
-  void concurrentRequestsAllowOnlyOneDisputeAndEvent() throws Exception {
+  void shouldAllowOnlyOneDisputeWhenConcurrentRequests() throws Exception {
     OrderRepository repository = mock(OrderRepository.class);
     ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
     UUID orderId = UUID.randomUUID();
@@ -52,8 +53,14 @@ class DisputeOrderConcurrencyReproductionTest {
     ExecutorService executor = Executors.newFixedThreadPool(2);
     try {
       UUID customerId = order.getCustomerId().getValue();
-      var first = executor.submit(() -> useCase.execute(new OrderId(orderId), customerId));
-      var second = executor.submit(() -> useCase.execute(new OrderId(orderId), customerId));
+      var first =
+          executor.submit(
+              () ->
+                  useCase.execute(new OrderId(orderId), customerId, DisputeReason.PRODUCT_DAMAGED));
+      var second =
+          executor.submit(
+              () ->
+                  useCase.execute(new OrderId(orderId), customerId, DisputeReason.PRODUCT_DAMAGED));
 
       int successfulRequests = 0;
       int rejectedRequests = 0;
@@ -90,6 +97,7 @@ class DisputeOrderConcurrencyReproductionTest {
         new OrderShippingDepartment("Bogota"),
         new OrderShippingCity("Bogota D.C."),
         new OrderCreatedAt(Timestamp.from(Instant.now())),
+        null,
         null,
         null,
         null,

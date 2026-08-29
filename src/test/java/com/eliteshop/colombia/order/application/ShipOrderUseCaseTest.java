@@ -34,6 +34,7 @@ class ShipOrderUseCaseTest {
   @BeforeEach
   void setUp() {
     useCase = new ShipOrderUseCase(repository, eventPublisher);
+    lenient().when(repository.updateStatusIfCurrent(any(), any(), any(), any())).thenReturn(true);
   }
 
   @Test
@@ -48,9 +49,9 @@ class ShipOrderUseCaseTest {
 
     useCase.execute(new OrderId(orderId));
 
-    ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
-    verify(repository).update(orderCaptor.capture());
-    assertThat(orderCaptor.getValue().getStatus()).isEqualTo(OrderStatus.SHIPPED);
+    verify(repository)
+        .updateStatusIfCurrent(
+            any(), eq(OrderStatus.IN_PREPARATION), eq(OrderStatus.SHIPPED), any());
 
     ArgumentCaptor<OrderStatusChangedEvent> eventCaptor =
         ArgumentCaptor.forClass(OrderStatusChangedEvent.class);
@@ -67,7 +68,7 @@ class ShipOrderUseCaseTest {
     assertThatThrownBy(() -> useCase.execute(new OrderId(orderId)))
         .isInstanceOf(OrderNotFoundException.class);
 
-    verify(repository, never()).update(any());
+    verify(repository, never()).updateStatusIfCurrent(any(), any(), any(), any());
   }
 
   @Test
@@ -83,7 +84,7 @@ class ShipOrderUseCaseTest {
         .isInstanceOf(InvalidOrderStatusTransitionException.class)
         .hasMessageContaining("Only IN_PREPARATION orders can be shipped");
 
-    verify(repository, never()).update(any());
+    verify(repository, never()).updateStatusIfCurrent(any(), any(), any(), any());
   }
 
   @Test
@@ -111,6 +112,7 @@ class ShipOrderUseCaseTest {
         new OrderShippingDepartment("Bogota"),
         new OrderShippingCity("Bogota D.C."),
         new OrderCreatedAt(Timestamp.from(Instant.now())),
+        null,
         null,
         null,
         null,

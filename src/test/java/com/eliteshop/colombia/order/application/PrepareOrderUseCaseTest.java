@@ -34,6 +34,7 @@ class PrepareOrderUseCaseTest {
   @BeforeEach
   void setUp() {
     useCase = new PrepareOrderUseCase(repository, eventPublisher);
+    lenient().when(repository.updateStatusIfCurrent(any(), any(), any(), any())).thenReturn(true);
   }
 
   @Test
@@ -47,9 +48,8 @@ class PrepareOrderUseCaseTest {
 
     useCase.execute(new OrderId(orderId));
 
-    ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
-    verify(repository).update(orderCaptor.capture());
-    assertThat(orderCaptor.getValue().getStatus()).isEqualTo(OrderStatus.IN_PREPARATION);
+    verify(repository)
+        .updateStatusIfCurrent(any(), eq(OrderStatus.PAID), eq(OrderStatus.IN_PREPARATION), any());
 
     ArgumentCaptor<OrderStatusChangedEvent> eventCaptor =
         ArgumentCaptor.forClass(OrderStatusChangedEvent.class);
@@ -66,7 +66,7 @@ class PrepareOrderUseCaseTest {
     assertThatThrownBy(() -> useCase.execute(new OrderId(orderId)))
         .isInstanceOf(OrderNotFoundException.class);
 
-    verify(repository, never()).update(any());
+    verify(repository, never()).updateStatusIfCurrent(any(), any(), any(), any());
   }
 
   @Test
@@ -83,7 +83,7 @@ class PrepareOrderUseCaseTest {
         .isInstanceOf(InvalidOrderStatusTransitionException.class)
         .hasMessageContaining("Only PAID orders can be prepared");
 
-    verify(repository, never()).update(any());
+    verify(repository, never()).updateStatusIfCurrent(any(), any(), any(), any());
   }
 
   @Test
@@ -112,6 +112,7 @@ class PrepareOrderUseCaseTest {
         new OrderShippingDepartment("Bogota"),
         new OrderShippingCity("Bogota D.C."),
         new OrderCreatedAt(Timestamp.from(Instant.now())),
+        null,
         null,
         null,
         null,

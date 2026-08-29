@@ -12,7 +12,6 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,21 +43,11 @@ class OrderStatusCountsUseCaseTest {
     when(orderItemRepository.findDistinctOrderIdsBySellerId(sellerId))
         .thenReturn(List.of(o1, o2, o3));
 
-    when(orderRepository.findById(any(OrderId.class)))
-        .thenAnswer(
-            invocation -> {
-              OrderId id = invocation.getArgument(0);
-              if (id.getValue().equals(o1))
-                return Optional.of(
-                    buildOrder(o1, customerId, OrderStatus.PAID, new BigDecimal("100000")));
-              if (id.getValue().equals(o2))
-                return Optional.of(
-                    buildOrder(o2, customerId, OrderStatus.PAID, new BigDecimal("200000")));
-              if (id.getValue().equals(o3))
-                return Optional.of(
-                    buildOrder(o3, customerId, OrderStatus.SHIPPED, new BigDecimal("150000")));
-              return Optional.empty();
-            });
+    Order order1 = buildOrder(o1, customerId, OrderStatus.PAID, new BigDecimal("100000"));
+    Order order2 = buildOrder(o2, customerId, OrderStatus.PAID, new BigDecimal("200000"));
+    Order order3 = buildOrder(o3, customerId, OrderStatus.SHIPPED, new BigDecimal("150000"));
+
+    when(orderRepository.findAllByIds(any())).thenReturn(List.of(order1, order2, order3));
 
     OrderStatusCountResponse response = useCase.execute(sellerId);
 
@@ -75,6 +64,7 @@ class OrderStatusCountsUseCaseTest {
     UUID sellerId = UUID.randomUUID();
 
     when(orderItemRepository.findDistinctOrderIdsBySellerId(sellerId)).thenReturn(List.of());
+    when(orderRepository.findAllByIds(any())).thenReturn(List.of());
 
     OrderStatusCountResponse response = useCase.execute(sellerId);
 
@@ -87,6 +77,7 @@ class OrderStatusCountsUseCaseTest {
     UUID sellerId = UUID.randomUUID();
 
     when(orderItemRepository.findDistinctOrderIdsBySellerId(sellerId)).thenReturn(List.of());
+    when(orderRepository.findAllByIds(any())).thenReturn(List.of());
 
     OrderStatusCountResponse response = useCase.execute(sellerId);
 
@@ -106,6 +97,7 @@ class OrderStatusCountsUseCaseTest {
         new OrderShippingDepartment("Bogota"),
         new OrderShippingCity("Bogota D.C."),
         new OrderCreatedAt(Timestamp.from(Instant.now())),
+        null,
         null,
         null,
         null,

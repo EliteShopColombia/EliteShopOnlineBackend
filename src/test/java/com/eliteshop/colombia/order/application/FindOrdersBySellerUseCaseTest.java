@@ -1,17 +1,16 @@
 package com.eliteshop.colombia.order.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 import com.eliteshop.colombia.order.domain.model.*;
-import com.eliteshop.colombia.order.domain.repository.OrderItemRepository;
 import com.eliteshop.colombia.order.domain.repository.OrderRepository;
+import com.eliteshop.colombia.shared.domain.PageResult;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,13 +22,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class FindOrdersBySellerUseCaseTest {
 
   @Mock private OrderRepository orderRepository;
-  @Mock private OrderItemRepository orderItemRepository;
 
   private FindOrdersBySellerUseCase useCase;
 
   @BeforeEach
   void setUp() {
-    useCase = new FindOrdersBySellerUseCase(orderRepository, orderItemRepository);
+    useCase = new FindOrdersBySellerUseCase(orderRepository);
   }
 
   @Test
@@ -37,66 +35,49 @@ class FindOrdersBySellerUseCaseTest {
     UUID sellerId = UUID.randomUUID();
     UUID orderId1 = UUID.randomUUID();
     UUID orderId2 = UUID.randomUUID();
+    UUID customerId = UUID.randomUUID();
 
-    when(orderItemRepository.findDistinctOrderIdsBySellerId(sellerId))
-        .thenReturn(List.of(orderId1, orderId2));
+    Order order1 = buildOrder(orderId1, customerId, OrderStatus.PAID, new BigDecimal("150000"));
+    Order order2 = buildOrder(orderId2, customerId, OrderStatus.SHIPPED, new BigDecimal("250000"));
 
-    Order order1 =
-        buildOrder(orderId1, UUID.randomUUID(), OrderStatus.PAID, new BigDecimal("150000"));
-    Order order2 =
-        buildOrder(orderId2, UUID.randomUUID(), OrderStatus.SHIPPED, new BigDecimal("250000"));
+    PageResult<Order> pageResult = PageResult.of(List.of(order1, order2), 0, 25, 2);
+    when(orderRepository.findPageBySellerId(eq(sellerId), eq(0), eq(25))).thenReturn(pageResult);
 
-    when(orderRepository.findById(any(OrderId.class)))
-        .thenAnswer(
-            invocation -> {
-              OrderId id = invocation.getArgument(0);
-              if (id.getValue().equals(orderId1)) return Optional.of(order1);
-              if (id.getValue().equals(orderId2)) return Optional.of(order2);
-              return Optional.empty();
-            });
+    PageResult<Order> result = useCase.execute(sellerId, 0, 25);
 
-    List<Order> result = useCase.execute(sellerId);
-
-    assertThat(result).hasSize(2);
-    assertThat(result.get(0).getId().getValue()).isEqualTo(orderId1);
-    assertThat(result.get(1).getId().getValue()).isEqualTo(orderId2);
+    assertThat(result.content()).hasSize(2);
+    assertThat(result.content().get(0).getId().getValue()).isEqualTo(orderId1);
+    assertThat(result.content().get(1).getId().getValue()).isEqualTo(orderId2);
   }
 
   @Test
   void shouldReturnEmptyListWhenNoOrdersForSeller() {
     UUID sellerId = UUID.randomUUID();
 
-    when(orderItemRepository.findDistinctOrderIdsBySellerId(sellerId)).thenReturn(List.of());
+    PageResult<Order> pageResult = PageResult.of(List.of(), 0, 25, 0);
+    when(orderRepository.findPageBySellerId(eq(sellerId), eq(0), eq(25))).thenReturn(pageResult);
 
-    List<Order> result = useCase.execute(sellerId);
+    PageResult<Order> result = useCase.execute(sellerId, 0, 25);
 
-    assertThat(result).isEmpty();
+    assertThat(result.content()).isEmpty();
+    assertThat(result.totalElements()).isEqualTo(0);
   }
 
   @Test
   void shouldHandleMissingOrderGracefully() {
     UUID sellerId = UUID.randomUUID();
     UUID orderId1 = UUID.randomUUID();
-    UUID orderId2 = UUID.randomUUID();
+    UUID customerId = UUID.randomUUID();
 
-    when(orderItemRepository.findDistinctOrderIdsBySellerId(sellerId))
-        .thenReturn(List.of(orderId1, orderId2));
+    Order order1 = buildOrder(orderId1, customerId, OrderStatus.PAID, new BigDecimal("150000"));
 
-    Order order1 =
-        buildOrder(orderId1, UUID.randomUUID(), OrderStatus.PAID, new BigDecimal("150000"));
+    PageResult<Order> pageResult = PageResult.of(List.of(order1), 0, 25, 1);
+    when(orderRepository.findPageBySellerId(eq(sellerId), eq(0), eq(25))).thenReturn(pageResult);
 
-    when(orderRepository.findById(any(OrderId.class)))
-        .thenAnswer(
-            invocation -> {
-              OrderId id = invocation.getArgument(0);
-              if (id.getValue().equals(orderId1)) return Optional.of(order1);
-              return Optional.empty();
-            });
+    PageResult<Order> result = useCase.execute(sellerId, 0, 25);
 
-    List<Order> result = useCase.execute(sellerId);
-
-    assertThat(result).hasSize(1);
-    assertThat(result.get(0).getId().getValue()).isEqualTo(orderId1);
+    assertThat(result.content()).hasSize(1);
+    assertThat(result.content().get(0).getId().getValue()).isEqualTo(orderId1);
   }
 
   private Order buildOrder(
@@ -110,6 +91,7 @@ class FindOrdersBySellerUseCaseTest {
         new OrderShippingDepartment("Bogota"),
         new OrderShippingCity("Bogota D.C."),
         new OrderCreatedAt(Timestamp.from(Instant.now())),
+        null,
         null,
         null,
         null,

@@ -96,6 +96,7 @@ class OrderFindByIdUseCaseTest {
         null,
         null,
         null,
+        null,
         null);
   }
 }

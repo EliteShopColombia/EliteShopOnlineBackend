@@ -78,6 +78,7 @@ class UpdateTrackingUseCaseTest {
         null,
         null,
         null,
+        null,
         null);
   }
 }

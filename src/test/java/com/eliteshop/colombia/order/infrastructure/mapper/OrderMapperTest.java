@@ -95,6 +95,7 @@ class OrderMapperTest {
             null,
             null,
             null,
+            null,
             null);
 
     OrderEntity entity = mapper.toEntity(domain);
@@ -129,6 +130,7 @@ class OrderMapperTest {
             new OrderShippingCity("Bogota D.C."),
             new OrderCreatedAt(now),
             new OrderUpdatedAt(updatedAt),
+            null,
             null,
             null,
             null);
@@ -191,6 +193,7 @@ class OrderMapperTest {
             null,
             null,
             null,
+            null,
             null);
 
     OrderResponse response = mapper.toResponse(domain);
@@ -227,6 +230,7 @@ class OrderMapperTest {
             new OrderUpdatedAt(updatedAt),
             null,
             null,
+            null,
             null);
 
     OrderResponse response = mapper.toResponse(domain);
@@ -237,6 +241,123 @@ class OrderMapperTest {
   @Test
   void shouldReturnNullWhenResponseDomainIsNull() {
     assertThat(mapper.toResponse(null)).isNull();
+  }
+
+  @Test
+  void shouldMapEntityToDomainWithDisputeReason() {
+    OrderEntity entity = new OrderEntity();
+    entity.setId(UUID.randomUUID());
+    entity.setCustomerId(UUID.randomUUID());
+    entity.setStatus("DISPUTE");
+    entity.setTotalAmount(new BigDecimal("200000"));
+    entity.setShippingAddress("Calle 100 #15-20");
+    entity.setShippingDepartment("Bogota");
+    entity.setShippingCity("Bogota D.C.");
+    entity.setCreatedAt(Timestamp.from(Instant.now()));
+    entity.setDisputeReason("PRODUCT_DAMAGED");
+
+    Order domain = mapper.toDomain(entity);
+
+    assertThat(domain.getDisputeReason()).isEqualTo(DisputeReason.PRODUCT_DAMAGED);
+  }
+
+  @Test
+  void shouldMapEntityToDomainWithNullDisputeReason() {
+    OrderEntity entity = new OrderEntity();
+    entity.setId(UUID.randomUUID());
+    entity.setCustomerId(UUID.randomUUID());
+    entity.setStatus("COMPLETED");
+    entity.setTotalAmount(new BigDecimal("100000"));
+    entity.setShippingAddress("Calle 50");
+    entity.setShippingDepartment("Bogota");
+    entity.setShippingCity("Bogota D.C.");
+    entity.setCreatedAt(Timestamp.from(Instant.now()));
+    entity.setDisputeReason(null);
+
+    Order domain = mapper.toDomain(entity);
+
+    assertThat(domain.getDisputeReason()).isNull();
+  }
+
+  @Test
+  void shouldMapDomainToEntityWithDisputeReason() {
+    UUID orderId = UUID.randomUUID();
+    UUID customerId = UUID.randomUUID();
+    Timestamp now = Timestamp.from(Instant.now());
+
+    Order domain =
+        new Order(
+            new OrderId(orderId),
+            new OrderCustomerId(customerId),
+            OrderStatus.DISPUTE,
+            new OrderTotalAmount(new BigDecimal("200000")),
+            new OrderShippingAddress("Calle 100 #15-20"),
+            new OrderShippingDepartment("Bogota"),
+            new OrderShippingCity("Bogota D.C."),
+            new OrderCreatedAt(now),
+            null,
+            null,
+            null,
+            null,
+            DisputeReason.WRONG_ITEM);
+
+    OrderEntity entity = mapper.toEntity(domain);
+
+    assertThat(entity.getDisputeReason()).isEqualTo("WRONG_ITEM");
+  }
+
+  @Test
+  void shouldMapDomainToEntityWithNullDisputeReason() {
+    UUID orderId = UUID.randomUUID();
+    UUID customerId = UUID.randomUUID();
+    Timestamp now = Timestamp.from(Instant.now());
+
+    Order domain =
+        new Order(
+            new OrderId(orderId),
+            new OrderCustomerId(customerId),
+            OrderStatus.COMPLETED,
+            new OrderTotalAmount(new BigDecimal("100000")),
+            new OrderShippingAddress("Calle 50"),
+            new OrderShippingDepartment("Bogota"),
+            new OrderShippingCity("Bogota D.C."),
+            new OrderCreatedAt(now),
+            null,
+            null,
+            null,
+            null,
+            null);
+
+    OrderEntity entity = mapper.toEntity(domain);
+
+    assertThat(entity.getDisputeReason()).isNull();
+  }
+
+  @Test
+  void shouldMapDomainToResponseWithDisputeReason() {
+    UUID orderId = UUID.randomUUID();
+    UUID customerId = UUID.randomUUID();
+    Timestamp now = Timestamp.from(Instant.now());
+
+    Order domain =
+        new Order(
+            new OrderId(orderId),
+            new OrderCustomerId(customerId),
+            OrderStatus.REFUNDED,
+            new OrderTotalAmount(new BigDecimal("200000")),
+            new OrderShippingAddress("Calle 100 #15-20"),
+            new OrderShippingDepartment("Bogota"),
+            new OrderShippingCity("Bogota D.C."),
+            new OrderCreatedAt(now),
+            null,
+            null,
+            null,
+            null,
+            DisputeReason.LATE_DELIVERY);
+
+    OrderResponse response = mapper.toResponse(domain);
+
+    assertThat(response.getDisputeReason()).isEqualTo("LATE_DELIVERY");
   }
 
   @Test
@@ -255,6 +376,7 @@ class OrderMapperTest {
               new OrderShippingDepartment("Bogota"),
               new OrderShippingCity("Bogota D.C."),
               new OrderCreatedAt(Timestamp.from(Instant.now())),
+              null,
               null,
               null,
               null,

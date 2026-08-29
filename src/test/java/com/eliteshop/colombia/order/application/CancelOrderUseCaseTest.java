@@ -9,10 +9,13 @@ import com.eliteshop.colombia.order.domain.event.OrderStatusChangedEvent;
 import com.eliteshop.colombia.order.domain.exception.InvalidOrderStatusTransitionException;
 import com.eliteshop.colombia.order.domain.exception.OrderNotFoundException;
 import com.eliteshop.colombia.order.domain.model.*;
+import com.eliteshop.colombia.order.domain.repository.OrderItemRepository;
 import com.eliteshop.colombia.order.domain.repository.OrderRepository;
+import com.eliteshop.colombia.product.domain.repository.ProductRepository;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,13 +30,20 @@ import org.springframework.context.ApplicationEventPublisher;
 class CancelOrderUseCaseTest {
 
   @Mock private OrderRepository repository;
+  @Mock private OrderItemRepository orderItemRepository;
+  @Mock private ProductRepository productRepository;
   @Mock private ApplicationEventPublisher eventPublisher;
 
   private CancelOrderUseCase useCase;
 
   @BeforeEach
   void setUp() {
-    useCase = new CancelOrderUseCase(repository, eventPublisher);
+    useCase =
+        new CancelOrderUseCase(repository, orderItemRepository, productRepository, eventPublisher);
+    lenient().when(repository.updateStatusIfCurrent(any(), any(), any(), any())).thenReturn(true);
+    lenient()
+        .when(orderItemRepository.findByOrderId(any(UUID.class)))
+        .thenReturn(Collections.emptyList());
   }
 
   @Test
@@ -48,9 +58,9 @@ class CancelOrderUseCaseTest {
 
     useCase.execute(new OrderId(orderId));
 
-    ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
-    verify(repository).update(orderCaptor.capture());
-    assertThat(orderCaptor.getValue().getStatus()).isEqualTo(OrderStatus.CANCELLED);
+    verify(repository)
+        .updateStatusIfCurrent(
+            any(), eq(OrderStatus.PENDING_PAYMENT), eq(OrderStatus.CANCELLED), any());
 
     ArgumentCaptor<OrderStatusChangedEvent> eventCaptor =
         ArgumentCaptor.forClass(OrderStatusChangedEvent.class);
@@ -70,9 +80,8 @@ class CancelOrderUseCaseTest {
 
     useCase.execute(new OrderId(orderId));
 
-    ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
-    verify(repository).update(orderCaptor.capture());
-    assertThat(orderCaptor.getValue().getStatus()).isEqualTo(OrderStatus.CANCELLED);
+    verify(repository)
+        .updateStatusIfCurrent(any(), eq(OrderStatus.PAID), eq(OrderStatus.CANCELLED), any());
   }
 
   @Test
@@ -85,7 +94,7 @@ class CancelOrderUseCaseTest {
         .isInstanceOf(OrderNotFoundException.class)
         .hasMessage("The order not exist in our platform");
 
-    verify(repository, never()).update(any());
+    verify(repository, never()).updateStatusIfCurrent(any(), any(), any(), any());
   }
 
   @Test
@@ -101,7 +110,7 @@ class CancelOrderUseCaseTest {
         .isInstanceOf(InvalidOrderStatusTransitionException.class)
         .hasMessageContaining("Only PENDING_PAYMENT or PAID orders can be cancelled");
 
-    verify(repository, never()).update(any());
+    verify(repository, never()).updateStatusIfCurrent(any(), any(), any(), any());
   }
 
   @Test
@@ -130,6 +139,7 @@ class CancelOrderUseCaseTest {
         new OrderShippingDepartment("Bogota"),
         new OrderShippingCity("Bogota D.C."),
         new OrderCreatedAt(Timestamp.from(Instant.now())),
+        null,
         null,
         null,
         null,

@@ -34,6 +34,7 @@ class OutForDeliveryUseCaseTest {
   @BeforeEach
   void setUp() {
     useCase = new OutForDeliveryUseCase(repository, eventPublisher);
+    lenient().when(repository.updateStatusIfCurrent(any(), any(), any(), any())).thenReturn(true);
   }
 
   @Test
@@ -47,9 +48,9 @@ class OutForDeliveryUseCaseTest {
 
     useCase.execute(new OrderId(orderId));
 
-    ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
-    verify(repository).update(orderCaptor.capture());
-    assertThat(orderCaptor.getValue().getStatus()).isEqualTo(OrderStatus.OUT_FOR_DELIVERY);
+    verify(repository)
+        .updateStatusIfCurrent(
+            any(), eq(OrderStatus.SHIPPED), eq(OrderStatus.OUT_FOR_DELIVERY), any());
 
     ArgumentCaptor<OrderStatusChangedEvent> eventCaptor =
         ArgumentCaptor.forClass(OrderStatusChangedEvent.class);
@@ -66,7 +67,7 @@ class OutForDeliveryUseCaseTest {
     assertThatThrownBy(() -> useCase.execute(new OrderId(orderId)))
         .isInstanceOf(OrderNotFoundException.class);
 
-    verify(repository, never()).update(any());
+    verify(repository, never()).updateStatusIfCurrent(any(), any(), any(), any());
   }
 
   @Test
@@ -83,7 +84,7 @@ class OutForDeliveryUseCaseTest {
         .isInstanceOf(InvalidOrderStatusTransitionException.class)
         .hasMessageContaining("Only SHIPPED orders can be out for delivery");
 
-    verify(repository, never()).update(any());
+    verify(repository, never()).updateStatusIfCurrent(any(), any(), any(), any());
   }
 
   @Test
@@ -112,6 +113,7 @@ class OutForDeliveryUseCaseTest {
         new OrderShippingDepartment("Bogota"),
         new OrderShippingCity("Bogota D.C."),
         new OrderCreatedAt(Timestamp.from(Instant.now())),
+        null,
         null,
         null,
         null,

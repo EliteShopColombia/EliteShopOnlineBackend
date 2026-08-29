@@ -34,6 +34,7 @@ class ConfirmDeliveryUseCaseTest {
   @BeforeEach
   void setUp() {
     useCase = new ConfirmDeliveryUseCase(repository, eventPublisher);
+    lenient().when(repository.updateStatusIfCurrent(any(), any(), any(), any())).thenReturn(true);
   }
 
   @Test
@@ -48,9 +49,9 @@ class ConfirmDeliveryUseCaseTest {
 
     useCase.execute(new OrderId(orderId));
 
-    ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
-    verify(repository).update(orderCaptor.capture());
-    assertThat(orderCaptor.getValue().getStatus()).isEqualTo(OrderStatus.DELIVERED);
+    verify(repository)
+        .updateStatusIfCurrent(
+            any(), eq(OrderStatus.OUT_FOR_DELIVERY), eq(OrderStatus.DELIVERED), any());
 
     ArgumentCaptor<OrderStatusChangedEvent> eventCaptor =
         ArgumentCaptor.forClass(OrderStatusChangedEvent.class);
@@ -69,7 +70,7 @@ class ConfirmDeliveryUseCaseTest {
         .isInstanceOf(OrderNotFoundException.class)
         .hasMessage("The order not exist in our platform");
 
-    verify(repository, never()).update(any());
+    verify(repository, never()).updateStatusIfCurrent(any(), any(), any(), any());
   }
 
   @Test
@@ -85,7 +86,7 @@ class ConfirmDeliveryUseCaseTest {
         .isInstanceOf(InvalidOrderStatusTransitionException.class)
         .hasMessageContaining("Only OUT_FOR_DELIVERY orders can be confirmed as delivered");
 
-    verify(repository, never()).update(any());
+    verify(repository, never()).updateStatusIfCurrent(any(), any(), any(), any());
   }
 
   @Test
@@ -100,6 +101,8 @@ class ConfirmDeliveryUseCaseTest {
     assertThatThrownBy(() -> useCase.execute(new OrderId(orderId)))
         .isInstanceOf(InvalidOrderStatusTransitionException.class)
         .hasMessageContaining("Only OUT_FOR_DELIVERY orders can be confirmed as delivered");
+
+    verify(repository, never()).updateStatusIfCurrent(any(), any(), any(), any());
   }
 
   @Test
@@ -127,6 +130,7 @@ class ConfirmDeliveryUseCaseTest {
         new OrderShippingDepartment("Bogota"),
         new OrderShippingCity("Bogota D.C."),
         new OrderCreatedAt(Timestamp.from(Instant.now())),
+        null,
         null,
         null,
         null,

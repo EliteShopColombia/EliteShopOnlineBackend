@@ -12,7 +12,6 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,23 +43,12 @@ class OrderSummaryUseCaseTest {
     when(orderItemRepository.findDistinctOrderIdsBySellerId(sellerId))
         .thenReturn(List.of(orderId1, orderId2, orderId3));
 
-    when(orderRepository.findById(any(OrderId.class)))
-        .thenAnswer(
-            invocation -> {
-              OrderId id = invocation.getArgument(0);
-              if (id.getValue().equals(orderId1))
-                return Optional.of(
-                    buildOrder(orderId1, customerId, OrderStatus.PAID, new BigDecimal("100000")));
-              if (id.getValue().equals(orderId2))
-                return Optional.of(
-                    buildOrder(
-                        orderId2, customerId, OrderStatus.SHIPPED, new BigDecimal("200000")));
-              if (id.getValue().equals(orderId3))
-                return Optional.of(
-                    buildOrder(
-                        orderId3, customerId, OrderStatus.COMPLETED, new BigDecimal("300000")));
-              return Optional.empty();
-            });
+    Order order1 = buildOrder(orderId1, customerId, OrderStatus.PAID, new BigDecimal("100000"));
+    Order order2 = buildOrder(orderId2, customerId, OrderStatus.SHIPPED, new BigDecimal("200000"));
+    Order order3 =
+        buildOrder(orderId3, customerId, OrderStatus.COMPLETED, new BigDecimal("300000"));
+
+    when(orderRepository.findAllByIds(any())).thenReturn(List.of(order1, order2, order3));
 
     OrderSummaryResponse response = useCase.execute(sellerId);
 
@@ -78,6 +66,7 @@ class OrderSummaryUseCaseTest {
     UUID sellerId = UUID.randomUUID();
 
     when(orderItemRepository.findDistinctOrderIdsBySellerId(sellerId)).thenReturn(List.of());
+    when(orderRepository.findAllByIds(any())).thenReturn(List.of());
 
     OrderSummaryResponse response = useCase.execute(sellerId);
 
@@ -100,25 +89,12 @@ class OrderSummaryUseCaseTest {
     when(orderItemRepository.findDistinctOrderIdsBySellerId(sellerId))
         .thenReturn(List.of(o1, o2, o3, o4));
 
-    when(orderRepository.findById(any(OrderId.class)))
-        .thenAnswer(
-            invocation -> {
-              OrderId id = invocation.getArgument(0);
-              UUID val = id.getValue();
-              if (val.equals(o1))
-                return Optional.of(
-                    buildOrder(o1, customerId, OrderStatus.PAID, new BigDecimal("100000")));
-              if (val.equals(o2))
-                return Optional.of(
-                    buildOrder(o2, customerId, OrderStatus.PAID, new BigDecimal("100000")));
-              if (val.equals(o3))
-                return Optional.of(
-                    buildOrder(o3, customerId, OrderStatus.CANCELLED, new BigDecimal("50000")));
-              if (val.equals(o4))
-                return Optional.of(
-                    buildOrder(o4, customerId, OrderStatus.PAID, new BigDecimal("150000")));
-              return Optional.empty();
-            });
+    Order order1 = buildOrder(o1, customerId, OrderStatus.PAID, new BigDecimal("100000"));
+    Order order2 = buildOrder(o2, customerId, OrderStatus.PAID, new BigDecimal("100000"));
+    Order order3 = buildOrder(o3, customerId, OrderStatus.CANCELLED, new BigDecimal("50000"));
+    Order order4 = buildOrder(o4, customerId, OrderStatus.PAID, new BigDecimal("150000"));
+
+    when(orderRepository.findAllByIds(any())).thenReturn(List.of(order1, order2, order3, order4));
 
     OrderSummaryResponse response = useCase.execute(sellerId);
 
@@ -138,6 +114,7 @@ class OrderSummaryUseCaseTest {
         new OrderShippingDepartment("Bogota"),
         new OrderShippingCity("Bogota D.C."),
         new OrderCreatedAt(Timestamp.from(Instant.now())),
+        null,
         null,
         null,
         null,

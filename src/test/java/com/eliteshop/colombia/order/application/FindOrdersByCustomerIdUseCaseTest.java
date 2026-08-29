@@ -1,10 +1,12 @@
 package com.eliteshop.colombia.order.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 import com.eliteshop.colombia.order.domain.model.*;
 import com.eliteshop.colombia.order.domain.repository.OrderRepository;
+import com.eliteshop.colombia.shared.domain.PageResult;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -34,40 +36,43 @@ class FindOrdersByCustomerIdUseCaseTest {
     UUID orderId1 = UUID.randomUUID();
     UUID orderId2 = UUID.randomUUID();
 
-    List<Order> orders =
-        List.of(
-            buildOrder(orderId1, customerId, OrderStatus.PAID, new BigDecimal("150000")),
-            buildOrder(orderId2, customerId, OrderStatus.SHIPPED, new BigDecimal("250000")));
+    Order order1 = buildOrder(orderId1, customerId, OrderStatus.PAID, new BigDecimal("150000"));
+    Order order2 = buildOrder(orderId2, customerId, OrderStatus.SHIPPED, new BigDecimal("250000"));
 
-    when(repository.findByCustomerId(customerId)).thenReturn(orders);
+    PageResult<Order> pageResult = PageResult.of(List.of(order1, order2), 0, 25, 2);
+    when(repository.findPageByCustomerId(eq(customerId), eq(0), eq(25))).thenReturn(pageResult);
 
-    List<Order> result = useCase.execute(new OrderCustomerId(customerId));
+    PageResult<Order> result = useCase.execute(new OrderCustomerId(customerId), 0, 25);
 
-    assertThat(result).hasSize(2);
-    assertThat(result.get(0).getId().getValue()).isEqualTo(orderId1);
-    assertThat(result.get(1).getId().getValue()).isEqualTo(orderId2);
+    assertThat(result.content()).hasSize(2);
+    assertThat(result.content().get(0).getId().getValue()).isEqualTo(orderId1);
+    assertThat(result.content().get(1).getId().getValue()).isEqualTo(orderId2);
+    assertThat(result.totalElements()).isEqualTo(2);
   }
 
   @Test
   void shouldReturnEmptyListWhenNoOrdersForCustomer() {
     UUID customerId = UUID.randomUUID();
 
-    when(repository.findByCustomerId(customerId)).thenReturn(List.of());
+    PageResult<Order> pageResult = PageResult.of(List.of(), 0, 25, 0);
+    when(repository.findPageByCustomerId(eq(customerId), eq(0), eq(25))).thenReturn(pageResult);
 
-    List<Order> result = useCase.execute(new OrderCustomerId(customerId));
+    PageResult<Order> result = useCase.execute(new OrderCustomerId(customerId), 0, 25);
 
-    assertThat(result).isEmpty();
+    assertThat(result.content()).isEmpty();
+    assertThat(result.totalElements()).isEqualTo(0);
   }
 
   @Test
   void shouldCallRepositoryWithCorrectCustomerId() {
     UUID customerId = UUID.randomUUID();
 
-    when(repository.findByCustomerId(customerId)).thenReturn(List.of());
+    PageResult<Order> pageResult = PageResult.of(List.of(), 0, 25, 0);
+    when(repository.findPageByCustomerId(eq(customerId), eq(0), eq(25))).thenReturn(pageResult);
 
-    useCase.execute(new OrderCustomerId(customerId));
+    useCase.execute(new OrderCustomerId(customerId), 0, 25);
 
-    verify(repository).findByCustomerId(customerId);
+    verify(repository).findPageByCustomerId(customerId, 0, 25);
   }
 
   private Order buildOrder(
@@ -81,6 +86,7 @@ class FindOrdersByCustomerIdUseCaseTest {
         new OrderShippingDepartment("Bogota"),
         new OrderShippingCity("Bogota D.C."),
         new OrderCreatedAt(Timestamp.from(Instant.now())),
+        null,
         null,
         null,
         null,

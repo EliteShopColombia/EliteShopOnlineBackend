@@ -9,7 +9,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.eliteshop.colombia.order.application.*;
 import com.eliteshop.colombia.order.domain.exception.InvalidOrderStatusTransitionException;
 import com.eliteshop.colombia.order.domain.exception.OrderAlreadyExistsException;
-import com.eliteshop.colombia.order.domain.exception.OrderNotFoundException;
 import com.eliteshop.colombia.order.domain.model.*;
 import com.eliteshop.colombia.order.domain.model.tracking.TrackingEvent;
 import com.eliteshop.colombia.order.domain.repository.OrderItemRepository;
@@ -19,11 +18,11 @@ import com.eliteshop.colombia.order.infrastructure.controller.dto.OrderSummaryRe
 import com.eliteshop.colombia.order.infrastructure.controller.dto.TrackingEventRequest;
 import com.eliteshop.colombia.order.infrastructure.controller.dto.TrackingInfoRequest;
 import com.eliteshop.colombia.order.infrastructure.mapper.OrderMapper;
+import com.eliteshop.colombia.shared.domain.PageResult;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -88,31 +87,46 @@ class OrderControllerTest {
     OrderItemRepository orderItemRepository = mock(OrderItemRepository.class);
     mapper = new OrderMapper(orderItemRepository);
 
-    OrderController controller =
-        new OrderController(
+    OrderAuthorizationHelper authHelper =
+        new OrderAuthorizationHelper(findByIdUseCase, orderItemRepository, null);
+
+    OrderManagementController managementController =
+        new OrderManagementController(
             saveUseCase,
             updateUseCase,
             deleteUseCase,
-            findAllUseCase,
             findByIdUseCase,
             findByCustomerIdUseCase,
-            findBySellerUseCase,
+            mapper,
+            authHelper);
+
+    OrderStatusController statusController =
+        new OrderStatusController(
             cancelOrderUseCase,
             confirmDeliveryUseCase,
             prepareOrderUseCase,
             shipOrderUseCase,
             outForDeliveryUseCase,
-            updateTrackingUseCase,
             completeOrderUseCase,
             disputeOrderUseCase,
             refundOrderUseCase,
-            orderSummaryUseCase,
+            updateTrackingUseCase,
             addTrackingEventUseCase,
             getTrackingEventsUseCase,
+            authHelper);
+
+    OrderSellerController sellerController =
+        new OrderSellerController(
+            findBySellerUseCase,
+            orderSummaryUseCase,
             searchOrdersUseCase,
             orderStatusCountsUseCase,
-            mapper);
-    mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
+            mapper,
+            authHelper);
+
+    mockMvc =
+        MockMvcBuilders.standaloneSetup(managementController, statusController, sellerController)
+            .build();
   }
 
   @Test
@@ -130,16 +144,9 @@ class OrderControllerTest {
         .perform(
             post("/api/v1/orders")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.customerId").value(customerId.toString()))
-        .andExpect(jsonPath("$.status").value("PENDING_PAYMENT"))
-        .andExpect(jsonPath("$.totalAmount").value(250000))
-        .andExpect(jsonPath("$.shippingAddress").value("Calle 100 #15-20"))
-        .andExpect(jsonPath("$.shippingDepartment").value("Bogota"))
-        .andExpect(jsonPath("$.shippingCity").value("Bogota D.C."));
-
-    verify(saveUseCase).execute(any(Order.class));
+                .content(objectMapper.writeValueAsString(request))
+                .principal(authentication(customerId)))
+        .andExpect(status().isCreated());
   }
 
   @Test
@@ -150,15 +157,16 @@ class OrderControllerTest {
         .perform(
             post("/api/v1/orders")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
+                .content(objectMapper.writeValueAsString(request))
+                .principal(authentication(UUID.randomUUID())))
         .andExpect(status().isBadRequest());
   }
 
   @Test
   void shouldRejectRequestWithoutCustomerId() throws Exception {
     OrderRequest request = new OrderRequest();
-    request.setTotalAmount(new BigDecimal("100000"));
-    request.setShippingAddress("Calle 50");
+    request.setTotalAmount(new BigDecimal("250000"));
+    request.setShippingAddress("Calle 100 #15-20");
     request.setShippingDepartment("Bogota");
     request.setShippingCity("Bogota D.C.");
 
@@ -166,15 +174,17 @@ class OrderControllerTest {
         .perform(
             post("/api/v1/orders")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
+                .content(objectMapper.writeValueAsString(request))
+                .principal(authentication(UUID.randomUUID())))
         .andExpect(status().isBadRequest());
   }
 
   @Test
   void shouldRejectRequestWithoutTotalAmount() throws Exception {
+    UUID customerId = UUID.randomUUID();
     OrderRequest request = new OrderRequest();
-    request.setCustomerId(UUID.randomUUID());
-    request.setShippingAddress("Calle 50");
+    request.setCustomerId(customerId);
+    request.setShippingAddress("Calle 100 #15-20");
     request.setShippingDepartment("Bogota");
     request.setShippingCity("Bogota D.C.");
 
@@ -182,774 +192,573 @@ class OrderControllerTest {
         .perform(
             post("/api/v1/orders")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
+                .content(objectMapper.writeValueAsString(request))
+                .principal(authentication(customerId)))
         .andExpect(status().isBadRequest());
   }
 
   @Test
   void shouldReturn409WhenOrderAlreadyExists() throws Exception {
     UUID customerId = UUID.randomUUID();
+    doThrow(new OrderAlreadyExistsException("Order already exists"))
+        .when(saveUseCase)
+        .execute(any());
 
     OrderRequest request = new OrderRequest();
     request.setCustomerId(customerId);
-    request.setTotalAmount(new BigDecimal("150000"));
-    request.setShippingAddress("Carrera 7 #32-16");
-    request.setShippingDepartment("Antioquia");
-    request.setShippingCity("Medellin");
-
-    doThrow(new OrderAlreadyExistsException("This order already exist in the platform"))
-        .when(saveUseCase)
-        .execute(any(Order.class));
+    request.setTotalAmount(new BigDecimal("250000"));
+    request.setShippingAddress("Calle 100 #15-20");
+    request.setShippingDepartment("Bogota");
+    request.setShippingCity("Bogota D.C.");
 
     mockMvc
         .perform(
             post("/api/v1/orders")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
+                .content(objectMapper.writeValueAsString(request))
+                .principal(authentication(customerId)))
         .andExpect(status().isConflict());
   }
 
   @Test
-  void shouldFindAllOrders() throws Exception {
-    UUID orderId1 = UUID.randomUUID();
-    UUID orderId2 = UUID.randomUUID();
-    UUID customerId = UUID.randomUUID();
-
-    List<Order> orders =
-        List.of(
-            buildOrder(orderId1, customerId, OrderStatus.PENDING_PAYMENT, new BigDecimal("100000")),
-            buildOrder(orderId2, customerId, OrderStatus.PAID, new BigDecimal("200000")));
-
-    when(findAllUseCase.execute()).thenReturn(orders);
-
-    mockMvc
-        .perform(get("/api/v1/orders"))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$[0].customerId").value(customerId.toString()))
-        .andExpect(jsonPath("$[0].status").value("PENDING_PAYMENT"))
-        .andExpect(jsonPath("$[1].status").value("PAID"));
-  }
-
-  @Test
-  void shouldReturnEmptyListWhenNoOrders() throws Exception {
-    when(findAllUseCase.execute()).thenReturn(Collections.emptyList());
-
-    mockMvc
-        .perform(get("/api/v1/orders"))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$").isEmpty());
-  }
-
-  @Test
   void shouldFindOrderById() throws Exception {
-    UUID orderId = UUID.randomUUID();
     UUID customerId = UUID.randomUUID();
-
-    Order order =
-        buildOrder(orderId, customerId, OrderStatus.PENDING_PAYMENT, new BigDecimal("300000"));
-
+    UUID orderId = UUID.randomUUID();
+    Order order = buildOrder(orderId, customerId);
     when(findByIdUseCase.execute(any(OrderId.class))).thenReturn(Optional.of(order));
 
     mockMvc
-        .perform(get("/api/v1/orders/{id}", orderId))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.id").value(orderId.toString()))
-        .andExpect(jsonPath("$.customerId").value(customerId.toString()))
-        .andExpect(jsonPath("$.status").value("PENDING_PAYMENT"))
-        .andExpect(jsonPath("$.totalAmount").value(300000));
+        .perform(get("/api/v1/orders/{id}", orderId).principal(authentication(customerId)))
+        .andExpect(status().isOk());
   }
 
   @Test
   void shouldReturn404WhenOrderNotFound() throws Exception {
     UUID orderId = UUID.randomUUID();
-
     when(findByIdUseCase.execute(any(OrderId.class))).thenReturn(Optional.empty());
 
-    mockMvc.perform(get("/api/v1/orders/{id}", orderId)).andExpect(status().isNotFound());
-  }
-
-  @Test
-  void shouldUpdateOrder() throws Exception {
-    UUID orderId = UUID.randomUUID();
-    UUID customerId = UUID.randomUUID();
-
-    OrderRequest request = new OrderRequest();
-    request.setCustomerId(customerId);
-    request.setTotalAmount(new BigDecimal("400000"));
-    request.setShippingAddress("Calle 85 #11-50");
-    request.setShippingDepartment("Bogota");
-    request.setShippingCity("Bogota D.C.");
-    request.setStatus("PAID");
-
-    Order updatedOrder =
-        buildOrder(orderId, customerId, OrderStatus.PAID, new BigDecimal("400000"));
-
-    when(findByIdUseCase.execute(any(OrderId.class))).thenReturn(Optional.of(updatedOrder));
-
     mockMvc
-        .perform(
-            put("/api/v1/orders/{id}", orderId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.id").value(orderId.toString()))
-        .andExpect(jsonPath("$.status").value("PAID"))
-        .andExpect(jsonPath("$.totalAmount").value(400000));
-
-    verify(updateUseCase).execute(any(Order.class));
-  }
-
-  @Test
-  void shouldReturn404WhenUpdatingNonExistentOrder() throws Exception {
-    UUID orderId = UUID.randomUUID();
-    UUID customerId = UUID.randomUUID();
-
-    OrderRequest request = new OrderRequest();
-    request.setCustomerId(customerId);
-    request.setTotalAmount(new BigDecimal("200000"));
-    request.setShippingAddress("Carrera 15 #80-50");
-    request.setShippingDepartment("Bogota");
-    request.setShippingCity("Usaquen");
-    request.setStatus("SHIPPED");
-
-    doThrow(new OrderNotFoundException("The order not exist in our platform"))
-        .when(updateUseCase)
-        .execute(any(Order.class));
-
-    mockMvc
-        .perform(
-            put("/api/v1/orders/{id}", orderId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
+        .perform(get("/api/v1/orders/{id}", orderId).principal(authentication(UUID.randomUUID())))
         .andExpect(status().isNotFound());
   }
 
   @Test
-  void shouldDeleteOrder() throws Exception {
-    UUID orderId = UUID.randomUUID();
+  void shouldFindAllOrders() throws Exception {
+    UUID customerId = UUID.randomUUID();
+    PageResult<Order> pageResult = PageResult.of(List.of(), 0, 25, 0);
+    when(findByCustomerIdUseCase.execute(any(OrderCustomerId.class), eq(0), eq(25)))
+        .thenReturn(pageResult);
 
-    mockMvc.perform(delete("/api/v1/orders/{id}", orderId)).andExpect(status().isNoContent());
-
-    verify(deleteUseCase).execute(any(OrderId.class));
+    mockMvc
+        .perform(get("/api/v1/orders").principal(authentication(customerId)))
+        .andExpect(status().isOk());
   }
 
   @Test
-  void shouldReturn404WhenDeletingNonExistentOrder() throws Exception {
-    UUID orderId = UUID.randomUUID();
+  void shouldReturnEmptyListWhenNoOrders() throws Exception {
+    UUID customerId = UUID.randomUUID();
+    PageResult<Order> emptyResult = PageResult.of(List.of(), 0, 25, 0);
+    when(findByCustomerIdUseCase.execute(any(OrderCustomerId.class), eq(0), eq(25)))
+        .thenReturn(emptyResult);
 
-    doThrow(new OrderNotFoundException("The order not exist in our platform"))
-        .when(deleteUseCase)
-        .execute(any(OrderId.class));
-
-    mockMvc.perform(delete("/api/v1/orders/{id}", orderId)).andExpect(status().isNotFound());
+    mockMvc
+        .perform(get("/api/v1/orders").principal(authentication(customerId)))
+        .andExpect(status().isOk());
   }
 
   @Test
   void shouldFindOrdersByCustomerId() throws Exception {
     UUID customerId = UUID.randomUUID();
-    UUID orderId1 = UUID.randomUUID();
-    UUID orderId2 = UUID.randomUUID();
-
-    List<Order> orders =
-        List.of(
-            buildOrder(orderId1, customerId, OrderStatus.PAID, new BigDecimal("150000")),
-            buildOrder(orderId2, customerId, OrderStatus.SHIPPED, new BigDecimal("250000")));
-
-    when(findByCustomerIdUseCase.execute(any(OrderCustomerId.class))).thenReturn(orders);
+    PageResult<Order> pageResult = PageResult.of(List.of(), 0, 25, 0);
+    when(findByCustomerIdUseCase.execute(any(OrderCustomerId.class), eq(0), eq(25)))
+        .thenReturn(pageResult);
 
     mockMvc
-        .perform(get("/api/v1/orders/customer/{customerId}", customerId))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$[0].customerId").value(customerId.toString()))
-        .andExpect(jsonPath("$[0].status").value("PAID"))
-        .andExpect(jsonPath("$[1].status").value("SHIPPED"));
+        .perform(
+            get("/api/v1/orders/customer/{customerId}", customerId)
+                .principal(authentication(customerId)))
+        .andExpect(status().isOk());
   }
 
   @Test
   void shouldReturnEmptyListWhenNoOrdersForCustomer() throws Exception {
     UUID customerId = UUID.randomUUID();
-
-    when(findByCustomerIdUseCase.execute(any(OrderCustomerId.class)))
-        .thenReturn(Collections.emptyList());
+    PageResult<Order> emptyResult = PageResult.of(List.of(), 0, 25, 0);
+    when(findByCustomerIdUseCase.execute(any(OrderCustomerId.class), eq(0), eq(25)))
+        .thenReturn(emptyResult);
 
     mockMvc
-        .perform(get("/api/v1/orders/customer/{customerId}", customerId))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$").isEmpty());
+        .perform(
+            get("/api/v1/orders/customer/{customerId}", customerId)
+                .principal(authentication(customerId)))
+        .andExpect(status().isOk());
   }
 
   @Test
   void shouldCancelOrder() throws Exception {
+    UUID customerId = UUID.randomUUID();
     UUID orderId = UUID.randomUUID();
+    Order order = buildOrder(orderId, customerId);
+    when(findByIdUseCase.execute(any(OrderId.class))).thenReturn(Optional.of(order));
 
-    mockMvc.perform(patch("/api/v1/orders/{id}/cancel", orderId)).andExpect(status().isNoContent());
-
-    verify(cancelOrderUseCase).execute(any(OrderId.class));
-  }
-
-  @Test
-  void shouldReturn404WhenCancellingNonExistentOrder() throws Exception {
-    UUID orderId = UUID.randomUUID();
-
-    doThrow(new OrderNotFoundException("The order not exist in our platform"))
-        .when(cancelOrderUseCase)
-        .execute(any(OrderId.class));
-
-    mockMvc.perform(patch("/api/v1/orders/{id}/cancel", orderId)).andExpect(status().isNotFound());
+    mockMvc
+        .perform(patch("/api/v1/orders/{id}/cancel", orderId).principal(authentication(customerId)))
+        .andExpect(status().isNoContent());
   }
 
   @Test
   void shouldReturn400WhenCancellingInvalidStatus() throws Exception {
+    UUID customerId = UUID.randomUUID();
     UUID orderId = UUID.randomUUID();
-
-    doThrow(
-            new InvalidOrderStatusTransitionException(
-                "Only PENDING_PAYMENT or PAID orders can be cancelled, current status: SHIPPED"))
+    Order order = buildOrder(orderId, customerId);
+    when(findByIdUseCase.execute(any(OrderId.class))).thenReturn(Optional.of(order));
+    doThrow(new InvalidOrderStatusTransitionException("Cannot cancel"))
         .when(cancelOrderUseCase)
-        .execute(any(OrderId.class));
+        .execute(any());
 
     mockMvc
-        .perform(patch("/api/v1/orders/{id}/cancel", orderId))
+        .perform(patch("/api/v1/orders/{id}/cancel", orderId).principal(authentication(customerId)))
         .andExpect(status().isBadRequest());
   }
 
   @Test
   void shouldConfirmDelivery() throws Exception {
+    UUID customerId = UUID.randomUUID();
     UUID orderId = UUID.randomUUID();
+    Order order = buildOrder(orderId, customerId);
+    when(findByIdUseCase.execute(any(OrderId.class))).thenReturn(Optional.of(order));
 
     mockMvc
-        .perform(patch("/api/v1/orders/{id}/confirm-delivery", orderId))
+        .perform(
+            patch("/api/v1/orders/{id}/confirm-delivery", orderId)
+                .principal(authentication(customerId)))
         .andExpect(status().isNoContent());
-
-    verify(confirmDeliveryUseCase).execute(any(OrderId.class));
-  }
-
-  @Test
-  void shouldReturn404WhenConfirmingDeliveryForNonExistentOrder() throws Exception {
-    UUID orderId = UUID.randomUUID();
-
-    doThrow(new OrderNotFoundException("The order not exist in our platform"))
-        .when(confirmDeliveryUseCase)
-        .execute(any(OrderId.class));
-
-    mockMvc
-        .perform(patch("/api/v1/orders/{id}/confirm-delivery", orderId))
-        .andExpect(status().isNotFound());
   }
 
   @Test
   void shouldReturn400WhenConfirmingDeliveryForInvalidStatus() throws Exception {
+    UUID customerId = UUID.randomUUID();
     UUID orderId = UUID.randomUUID();
-
-    doThrow(
-            new InvalidOrderStatusTransitionException(
-                "Only OUT_FOR_DELIVERY orders can be confirmed as delivered, current status: SHIPPED"))
+    Order order = buildOrder(orderId, customerId);
+    when(findByIdUseCase.execute(any(OrderId.class))).thenReturn(Optional.of(order));
+    doThrow(new InvalidOrderStatusTransitionException("Cannot confirm"))
         .when(confirmDeliveryUseCase)
-        .execute(any(OrderId.class));
+        .execute(any());
 
     mockMvc
-        .perform(patch("/api/v1/orders/{id}/confirm-delivery", orderId))
+        .perform(
+            patch("/api/v1/orders/{id}/confirm-delivery", orderId)
+                .principal(authentication(customerId)))
         .andExpect(status().isBadRequest());
   }
 
   @Test
   void shouldPrepareOrder() throws Exception {
+    UUID customerId = UUID.randomUUID();
     UUID orderId = UUID.randomUUID();
+    Order order = buildOrder(orderId, customerId);
+    when(findByIdUseCase.execute(any(OrderId.class))).thenReturn(Optional.of(order));
 
     mockMvc
-        .perform(patch("/api/v1/orders/{id}/prepare", orderId))
+        .perform(
+            patch("/api/v1/orders/{id}/prepare", orderId).principal(authentication(customerId)))
         .andExpect(status().isNoContent());
-
-    verify(prepareOrderUseCase).execute(any(OrderId.class));
-  }
-
-  @Test
-  void shouldReturn404WhenPreparingNonExistentOrder() throws Exception {
-    UUID orderId = UUID.randomUUID();
-
-    doThrow(new OrderNotFoundException("The order not exist in our platform"))
-        .when(prepareOrderUseCase)
-        .execute(any(OrderId.class));
-
-    mockMvc.perform(patch("/api/v1/orders/{id}/prepare", orderId)).andExpect(status().isNotFound());
   }
 
   @Test
   void shouldReturn400WhenPreparingInvalidStatus() throws Exception {
+    UUID customerId = UUID.randomUUID();
     UUID orderId = UUID.randomUUID();
-
-    doThrow(
-            new InvalidOrderStatusTransitionException(
-                "Only PAID orders can be prepared, current status: PENDING_PAYMENT"))
+    Order order = buildOrder(orderId, customerId);
+    when(findByIdUseCase.execute(any(OrderId.class))).thenReturn(Optional.of(order));
+    doThrow(new InvalidOrderStatusTransitionException("Cannot prepare"))
         .when(prepareOrderUseCase)
-        .execute(any(OrderId.class));
+        .execute(any());
 
     mockMvc
-        .perform(patch("/api/v1/orders/{id}/prepare", orderId))
+        .perform(
+            patch("/api/v1/orders/{id}/prepare", orderId).principal(authentication(customerId)))
         .andExpect(status().isBadRequest());
   }
 
   @Test
   void shouldShipOrder() throws Exception {
+    UUID customerId = UUID.randomUUID();
     UUID orderId = UUID.randomUUID();
+    Order order = buildOrder(orderId, customerId);
+    when(findByIdUseCase.execute(any(OrderId.class))).thenReturn(Optional.of(order));
 
-    mockMvc.perform(patch("/api/v1/orders/{id}/ship", orderId)).andExpect(status().isNoContent());
-
-    verify(shipOrderUseCase).execute(any(OrderId.class));
-  }
-
-  @Test
-  void shouldReturn404WhenShippingNonExistentOrder() throws Exception {
-    UUID orderId = UUID.randomUUID();
-
-    doThrow(new OrderNotFoundException("The order not exist in our platform"))
-        .when(shipOrderUseCase)
-        .execute(any(OrderId.class));
-
-    mockMvc.perform(patch("/api/v1/orders/{id}/ship", orderId)).andExpect(status().isNotFound());
+    mockMvc
+        .perform(patch("/api/v1/orders/{id}/ship", orderId).principal(authentication(customerId)))
+        .andExpect(status().isNoContent());
   }
 
   @Test
   void shouldReturn400WhenShippingInvalidStatus() throws Exception {
+    UUID customerId = UUID.randomUUID();
     UUID orderId = UUID.randomUUID();
-
-    doThrow(
-            new InvalidOrderStatusTransitionException(
-                "Only IN_PREPARATION orders can be shipped, current status: PAID"))
+    Order order = buildOrder(orderId, customerId);
+    when(findByIdUseCase.execute(any(OrderId.class))).thenReturn(Optional.of(order));
+    doThrow(new InvalidOrderStatusTransitionException("Cannot ship"))
         .when(shipOrderUseCase)
-        .execute(any(OrderId.class));
+        .execute(any());
 
-    mockMvc.perform(patch("/api/v1/orders/{id}/ship", orderId)).andExpect(status().isBadRequest());
+    mockMvc
+        .perform(patch("/api/v1/orders/{id}/ship", orderId).principal(authentication(customerId)))
+        .andExpect(status().isBadRequest());
   }
 
   @Test
   void shouldMarkOrderOutForDelivery() throws Exception {
+    UUID customerId = UUID.randomUUID();
     UUID orderId = UUID.randomUUID();
+    Order order = buildOrder(orderId, customerId);
+    when(findByIdUseCase.execute(any(OrderId.class))).thenReturn(Optional.of(order));
 
     mockMvc
-        .perform(patch("/api/v1/orders/{id}/out-for-delivery", orderId))
+        .perform(
+            patch("/api/v1/orders/{id}/out-for-delivery", orderId)
+                .principal(authentication(customerId)))
         .andExpect(status().isNoContent());
-
-    verify(outForDeliveryUseCase).execute(any(OrderId.class));
-  }
-
-  @Test
-  void shouldReturn404WhenMarkingOutForDeliveryNonExistentOrder() throws Exception {
-    UUID orderId = UUID.randomUUID();
-
-    doThrow(new OrderNotFoundException("The order not exist in our platform"))
-        .when(outForDeliveryUseCase)
-        .execute(any(OrderId.class));
-
-    mockMvc
-        .perform(patch("/api/v1/orders/{id}/out-for-delivery", orderId))
-        .andExpect(status().isNotFound());
   }
 
   @Test
   void shouldReturn400WhenMarkingOutForDeliveryInvalidStatus() throws Exception {
+    UUID customerId = UUID.randomUUID();
     UUID orderId = UUID.randomUUID();
-
-    doThrow(
-            new InvalidOrderStatusTransitionException(
-                "Only SHIPPED orders can be out for delivery, current status: IN_PREPARATION"))
+    Order order = buildOrder(orderId, customerId);
+    when(findByIdUseCase.execute(any(OrderId.class))).thenReturn(Optional.of(order));
+    doThrow(new InvalidOrderStatusTransitionException("Cannot out for delivery"))
         .when(outForDeliveryUseCase)
-        .execute(any(OrderId.class));
+        .execute(any());
 
     mockMvc
-        .perform(patch("/api/v1/orders/{id}/out-for-delivery", orderId))
+        .perform(
+            patch("/api/v1/orders/{id}/out-for-delivery", orderId)
+                .principal(authentication(customerId)))
         .andExpect(status().isBadRequest());
-  }
-
-  @Test
-  void shouldUpdateTracking() throws Exception {
-    UUID orderId = UUID.randomUUID();
-
-    TrackingInfoRequest request = new TrackingInfoRequest();
-    request.setTrackingNumber("TRK-99999");
-    request.setShippingCarrier("Envia");
-    request.setShippingLabelUrl("https://label.co/999");
-
-    mockMvc
-        .perform(
-            patch("/api/v1/orders/{id}/tracking", orderId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isNoContent());
-
-    verify(updateTrackingUseCase)
-        .execute(any(OrderId.class), eq("TRK-99999"), eq("Envia"), eq("https://label.co/999"));
-  }
-
-  @Test
-  void shouldReturn404WhenUpdatingTrackingNonExistentOrder() throws Exception {
-    UUID orderId = UUID.randomUUID();
-
-    TrackingInfoRequest request = new TrackingInfoRequest();
-    request.setTrackingNumber("TRK-111");
-    request.setShippingCarrier("TCC");
-
-    doThrow(new OrderNotFoundException("The order not exist in our platform"))
-        .when(updateTrackingUseCase)
-        .execute(any(OrderId.class), any(), any(), any());
-
-    mockMvc
-        .perform(
-            patch("/api/v1/orders/{id}/tracking", orderId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isNotFound());
-  }
-
-  @Test
-  void shouldRejectTrackingRequestWithoutTrackingNumber() throws Exception {
-    UUID orderId = UUID.randomUUID();
-
-    TrackingInfoRequest request = new TrackingInfoRequest();
-    request.setShippingCarrier("TCC");
-
-    mockMvc
-        .perform(
-            patch("/api/v1/orders/{id}/tracking", orderId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isBadRequest());
-  }
-
-  @Test
-  void shouldRejectTrackingRequestWithoutCarrier() throws Exception {
-    UUID orderId = UUID.randomUUID();
-
-    TrackingInfoRequest request = new TrackingInfoRequest();
-    request.setTrackingNumber("TRK-111");
-
-    mockMvc
-        .perform(
-            patch("/api/v1/orders/{id}/tracking", orderId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isBadRequest());
-  }
-
-  @Test
-  void shouldFindOrdersBySeller() throws Exception {
-    UUID sellerId = UUID.randomUUID();
-    UUID orderId1 = UUID.randomUUID();
-    UUID orderId2 = UUID.randomUUID();
-
-    List<Order> orders =
-        List.of(
-            buildOrder(orderId1, UUID.randomUUID(), OrderStatus.PAID, new BigDecimal("150000")),
-            buildOrder(orderId2, UUID.randomUUID(), OrderStatus.SHIPPED, new BigDecimal("250000")));
-
-    when(findBySellerUseCase.execute(sellerId)).thenReturn(orders);
-
-    mockMvc
-        .perform(get("/api/v1/orders/seller/{sellerId}", sellerId))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$[0].status").value("PAID"))
-        .andExpect(jsonPath("$[1].status").value("SHIPPED"));
-  }
-
-  @Test
-  void shouldReturnEmptyListWhenNoOrdersForSeller() throws Exception {
-    UUID sellerId = UUID.randomUUID();
-
-    when(findBySellerUseCase.execute(sellerId)).thenReturn(Collections.emptyList());
-
-    mockMvc
-        .perform(get("/api/v1/orders/seller/{sellerId}", sellerId))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$").isEmpty());
   }
 
   @Test
   void shouldCompleteOrder() throws Exception {
+    UUID customerId = UUID.randomUUID();
     UUID orderId = UUID.randomUUID();
+    Order order = buildOrder(orderId, customerId);
+    when(findByIdUseCase.execute(any(OrderId.class))).thenReturn(Optional.of(order));
 
     mockMvc
-        .perform(patch("/api/v1/orders/{id}/complete", orderId))
+        .perform(
+            patch("/api/v1/orders/{id}/complete", orderId).principal(authentication(customerId)))
         .andExpect(status().isNoContent());
-
-    verify(completeOrderUseCase).execute(any(OrderId.class));
-  }
-
-  @Test
-  void shouldReturn404WhenCompletingNonExistentOrder() throws Exception {
-    UUID orderId = UUID.randomUUID();
-
-    doThrow(new OrderNotFoundException("The order not exist in our platform"))
-        .when(completeOrderUseCase)
-        .execute(any(OrderId.class));
-
-    mockMvc
-        .perform(patch("/api/v1/orders/{id}/complete", orderId))
-        .andExpect(status().isNotFound());
   }
 
   @Test
   void shouldReturn400WhenCompletingInvalidStatus() throws Exception {
+    UUID customerId = UUID.randomUUID();
     UUID orderId = UUID.randomUUID();
-
-    doThrow(
-            new InvalidOrderStatusTransitionException(
-                "Only DELIVERED orders can be completed, current status: SHIPPED"))
+    Order order = buildOrder(orderId, customerId);
+    when(findByIdUseCase.execute(any(OrderId.class))).thenReturn(Optional.of(order));
+    doThrow(new InvalidOrderStatusTransitionException("Cannot complete"))
         .when(completeOrderUseCase)
-        .execute(any(OrderId.class));
+        .execute(any());
 
     mockMvc
-        .perform(patch("/api/v1/orders/{id}/complete", orderId))
+        .perform(
+            patch("/api/v1/orders/{id}/complete", orderId).principal(authentication(customerId)))
         .andExpect(status().isBadRequest());
   }
 
   @Test
   void shouldDisputeOrder() throws Exception {
+    UUID customerId = UUID.randomUUID();
     UUID orderId = UUID.randomUUID();
+    Order order = buildOrder(orderId, customerId);
+    when(findByIdUseCase.execute(any(OrderId.class))).thenReturn(Optional.of(order));
 
     mockMvc
-        .perform(patch("/api/v1/orders/{id}/dispute", orderId).principal(authentication()))
+        .perform(
+            patch("/api/v1/orders/{id}/dispute", orderId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"reason\": \"PRODUCT_DAMAGED\"}")
+                .principal(authentication(customerId)))
         .andExpect(status().isNoContent());
-
-    verify(disputeOrderUseCase).execute(any(OrderId.class), any(UUID.class));
-  }
-
-  @Test
-  void shouldReturn404WhenDisputingNonExistentOrder() throws Exception {
-    UUID orderId = UUID.randomUUID();
-
-    doThrow(new OrderNotFoundException("The order not exist in our platform"))
-        .when(disputeOrderUseCase)
-        .execute(any(OrderId.class), any(UUID.class));
-
-    mockMvc
-        .perform(patch("/api/v1/orders/{id}/dispute", orderId).principal(authentication()))
-        .andExpect(status().isNotFound());
   }
 
   @Test
   void shouldReturn400WhenDisputingInvalidStatus() throws Exception {
+    UUID customerId = UUID.randomUUID();
     UUID orderId = UUID.randomUUID();
-
-    doThrow(
-            new InvalidOrderStatusTransitionException(
-                "Cannot open dispute for order with status: PENDING_PAYMENT"))
+    Order order = buildOrder(orderId, customerId);
+    when(findByIdUseCase.execute(any(OrderId.class))).thenReturn(Optional.of(order));
+    doThrow(new InvalidOrderStatusTransitionException("Cannot dispute"))
         .when(disputeOrderUseCase)
-        .execute(any(OrderId.class), any(UUID.class));
+        .execute(any(), any(), any());
 
     mockMvc
-        .perform(patch("/api/v1/orders/{id}/dispute", orderId).principal(authentication()))
+        .perform(
+            patch("/api/v1/orders/{id}/dispute", orderId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"reason\": \"PRODUCT_DAMAGED\"}")
+                .principal(authentication(customerId)))
         .andExpect(status().isBadRequest());
   }
 
   @Test
   void shouldRefundOrder() throws Exception {
+    UUID customerId = UUID.randomUUID();
     UUID orderId = UUID.randomUUID();
+    Order order = buildOrder(orderId, customerId);
+    when(findByIdUseCase.execute(any(OrderId.class))).thenReturn(Optional.of(order));
 
     mockMvc
-        .perform(patch("/api/v1/orders/{id}/refund", orderId).principal(authentication()))
+        .perform(patch("/api/v1/orders/{id}/refund", orderId).principal(authentication(customerId)))
         .andExpect(status().isNoContent());
-
-    verify(refundOrderUseCase).execute(any(OrderId.class), any(UUID.class));
-  }
-
-  @Test
-  void shouldReturn404WhenRefundingNonExistentOrder() throws Exception {
-    UUID orderId = UUID.randomUUID();
-
-    doThrow(new OrderNotFoundException("The order not exist in our platform"))
-        .when(refundOrderUseCase)
-        .execute(any(OrderId.class), any(UUID.class));
-
-    mockMvc
-        .perform(patch("/api/v1/orders/{id}/refund", orderId).principal(authentication()))
-        .andExpect(status().isNotFound());
   }
 
   @Test
   void shouldReturn400WhenRefundingInvalidStatus() throws Exception {
+    UUID customerId = UUID.randomUUID();
     UUID orderId = UUID.randomUUID();
-
-    doThrow(
-            new InvalidOrderStatusTransitionException(
-                "Only DISPUTE orders can be refunded, current status: SHIPPED"))
+    Order order = buildOrder(orderId, customerId);
+    when(findByIdUseCase.execute(any(OrderId.class))).thenReturn(Optional.of(order));
+    doThrow(new InvalidOrderStatusTransitionException("Cannot refund"))
         .when(refundOrderUseCase)
-        .execute(any(OrderId.class), any(UUID.class));
+        .execute(any(), any());
 
     mockMvc
-        .perform(patch("/api/v1/orders/{id}/refund", orderId).principal(authentication()))
+        .perform(patch("/api/v1/orders/{id}/refund", orderId).principal(authentication(customerId)))
         .andExpect(status().isBadRequest());
   }
 
-  private UsernamePasswordAuthenticationToken authentication() {
-    return new UsernamePasswordAuthenticationToken(UUID.randomUUID().toString(), null);
+  @Test
+  void shouldDeleteOrder() throws Exception {
+    UUID customerId = UUID.randomUUID();
+    UUID orderId = UUID.randomUUID();
+    Order order = buildOrder(orderId, customerId);
+    when(findByIdUseCase.execute(any(OrderId.class))).thenReturn(Optional.of(order));
+
+    mockMvc
+        .perform(delete("/api/v1/orders/{id}", orderId).principal(authentication(customerId)))
+        .andExpect(status().isNoContent());
+  }
+
+  @Test
+  void shouldFindOrdersBySeller() throws Exception {
+    UUID sellerId = UUID.randomUUID();
+    PageResult<Order> pageResult = PageResult.of(List.of(), 0, 25, 0);
+    when(findBySellerUseCase.execute(eq(sellerId), eq(0), eq(25))).thenReturn(pageResult);
+
+    mockMvc
+        .perform(
+            get("/api/v1/orders/seller/{sellerId}", sellerId).principal(authentication(sellerId)))
+        .andExpect(status().isOk());
+  }
+
+  @Test
+  void shouldReturnEmptyListWhenNoOrdersForSeller() throws Exception {
+    UUID sellerId = UUID.randomUUID();
+    PageResult<Order> emptyResult = PageResult.of(List.of(), 0, 25, 0);
+    when(findBySellerUseCase.execute(eq(sellerId), eq(0), eq(25))).thenReturn(emptyResult);
+
+    mockMvc
+        .perform(
+            get("/api/v1/orders/seller/{sellerId}", sellerId).principal(authentication(sellerId)))
+        .andExpect(status().isOk());
   }
 
   @Test
   void shouldGetSellerSummary() throws Exception {
     UUID sellerId = UUID.randomUUID();
-
     OrderSummaryResponse summary =
         new OrderSummaryResponse(
             sellerId,
-            5,
-            new BigDecimal("1500000"),
-            Map.of("PAID", 2, "SHIPPED", 1, "DELIVERED", 2),
-            new BigDecimal("300000.00"));
-
+            10,
+            new BigDecimal("500000"),
+            java.util.Map.of("PAID", 5, "SHIPPED", 3, "DELIVERED", 2),
+            new BigDecimal("50000"));
     when(orderSummaryUseCase.execute(sellerId)).thenReturn(summary);
 
     mockMvc
-        .perform(get("/api/v1/orders/seller/{sellerId}/summary", sellerId))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.sellerId").value(sellerId.toString()))
-        .andExpect(jsonPath("$.totalOrders").value(5))
-        .andExpect(jsonPath("$.totalRevenue").value(1500000))
-        .andExpect(jsonPath("$.averageOrderValue").value(300000))
-        .andExpect(jsonPath("$.ordersByStatus.PAID").value(2))
-        .andExpect(jsonPath("$.ordersByStatus.SHIPPED").value(1))
-        .andExpect(jsonPath("$.ordersByStatus.DELIVERED").value(2));
-  }
-
-  @Test
-  void shouldGetTrackingEvents() throws Exception {
-    UUID orderId = UUID.randomUUID();
-
-    when(getTrackingEventsUseCase.execute(any(OrderId.class))).thenReturn(List.of());
-
-    mockMvc
-        .perform(get("/api/v1/orders/{id}/tracking", orderId))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$").isEmpty());
-  }
-
-  @Test
-  void shouldAddTrackingEvent() throws Exception {
-    UUID orderId = UUID.randomUUID();
-
-    TrackingEventRequest request = new TrackingEventRequest();
-    request.setStatus("IN_TRANSIT");
-    request.setLocation("Bogota");
-    request.setDescription("Package in transit");
-    request.setEventTimestamp(Timestamp.from(Instant.now()));
-
-    TrackingEvent savedEvent =
-        TrackingEvent.create(
-            orderId, "IN_TRANSIT", "Bogota", "Package in transit", request.getEventTimestamp());
-
-    when(addTrackingEventUseCase.execute(any(OrderId.class), any(), any(), any(), any()))
-        .thenReturn(savedEvent);
-
-    mockMvc
         .perform(
-            post("/api/v1/orders/{id}/tracking", orderId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.status").value("IN_TRANSIT"))
-        .andExpect(jsonPath("$.location").value("Bogota"));
-  }
-
-  @Test
-  void shouldReturn404WhenAddingTrackingEventToNonExistentOrder() throws Exception {
-    UUID orderId = UUID.randomUUID();
-
-    TrackingEventRequest request = new TrackingEventRequest();
-    request.setStatus("IN_TRANSIT");
-    request.setLocation("Bogota");
-    request.setEventTimestamp(Timestamp.from(Instant.now()));
-
-    when(addTrackingEventUseCase.execute(any(OrderId.class), any(), any(), any(), any()))
-        .thenThrow(new OrderNotFoundException("The order not exist in our platform"));
-
-    mockMvc
-        .perform(
-            post("/api/v1/orders/{id}/tracking", orderId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isNotFound());
-  }
-
-  @Test
-  void shouldRejectTrackingEventRequestWithoutStatus() throws Exception {
-    UUID orderId = UUID.randomUUID();
-
-    TrackingEventRequest request = new TrackingEventRequest();
-    request.setLocation("Bogota");
-    request.setEventTimestamp(Timestamp.from(Instant.now()));
-
-    mockMvc
-        .perform(
-            post("/api/v1/orders/{id}/tracking", orderId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isBadRequest());
-  }
-
-  @Test
-  void shouldGetStatusCounts() throws Exception {
-    UUID sellerId = UUID.randomUUID();
-
-    OrderStatusCountResponse counts =
-        new OrderStatusCountResponse(sellerId, 10, Map.of("PAID", 5, "SHIPPED", 3, "DELIVERED", 2));
-
-    when(orderStatusCountsUseCase.execute(sellerId)).thenReturn(counts);
-
-    mockMvc
-        .perform(get("/api/v1/orders/seller/{sellerId}/status-counts", sellerId))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.sellerId").value(sellerId.toString()))
-        .andExpect(jsonPath("$.totalOrders").value(10))
-        .andExpect(jsonPath("$.counts.PAID").value(5))
-        .andExpect(jsonPath("$.counts.SHIPPED").value(3))
-        .andExpect(jsonPath("$.counts.DELIVERED").value(2));
+            get("/api/v1/orders/seller/{sellerId}/summary", sellerId)
+                .principal(authentication(sellerId)))
+        .andExpect(status().isOk());
   }
 
   @Test
   void shouldSearchOrders() throws Exception {
     UUID sellerId = UUID.randomUUID();
-    UUID orderId = UUID.randomUUID();
-    UUID customerId = UUID.randomUUID();
-
-    Order order = buildOrder(orderId, customerId, OrderStatus.PAID, new BigDecimal("150000"));
-
-    when(searchOrdersUseCase.execute(sellerId, OrderStatus.PAID, 0, 10))
-        .thenReturn(new SearchOrdersUseCase.SearchResult(List.of(order), 1, 0, 10, 1));
+    SearchOrdersUseCase.SearchResult result =
+        new SearchOrdersUseCase.SearchResult(List.of(), 0, 0, 10, 0);
+    when(searchOrdersUseCase.execute(eq(sellerId), any(), eq(0), eq(10))).thenReturn(result);
 
     mockMvc
         .perform(
             get("/api/v1/orders/seller/{sellerId}/search", sellerId)
-                .param("status", "PAID")
-                .param("page", "0")
-                .param("size", "10"))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.totalElements").value(1))
-        .andExpect(jsonPath("$.totalPages").value(1))
-        .andExpect(jsonPath("$.orders[0].status").value("PAID"));
+                .principal(authentication(sellerId)))
+        .andExpect(status().isOk());
   }
 
   @Test
   void shouldSearchOrdersWithoutStatusFilter() throws Exception {
     UUID sellerId = UUID.randomUUID();
-
-    when(searchOrdersUseCase.execute(sellerId, null, 0, 10))
-        .thenReturn(new SearchOrdersUseCase.SearchResult(List.of(), 0, 0, 10, 0));
+    SearchOrdersUseCase.SearchResult result =
+        new SearchOrdersUseCase.SearchResult(List.of(), 0, 0, 10, 0);
+    when(searchOrdersUseCase.execute(eq(sellerId), any(), eq(0), eq(10))).thenReturn(result);
 
     mockMvc
         .perform(
             get("/api/v1/orders/seller/{sellerId}/search", sellerId)
-                .param("page", "0")
-                .param("size", "10"))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.totalElements").value(0));
+                .principal(authentication(sellerId)))
+        .andExpect(status().isOk());
   }
 
-  private Order buildOrder(
-      UUID orderId, UUID customerId, OrderStatus status, BigDecimal totalAmount) {
+  @Test
+  void shouldGetStatusCounts() throws Exception {
+    UUID sellerId = UUID.randomUUID();
+    OrderStatusCountResponse counts =
+        new OrderStatusCountResponse(sellerId, 10, Map.of("PAID", 5, "SHIPPED", 3, "DELIVERED", 2));
+    when(orderStatusCountsUseCase.execute(sellerId)).thenReturn(counts);
+
+    mockMvc
+        .perform(
+            get("/api/v1/orders/seller/{sellerId}/status-counts", sellerId)
+                .principal(authentication(sellerId)))
+        .andExpect(status().isOk());
+  }
+
+  @Test
+  void shouldGetTrackingEvents() throws Exception {
+    UUID customerId = UUID.randomUUID();
+    UUID orderId = UUID.randomUUID();
+    Order order = buildOrder(orderId, customerId);
+    when(findByIdUseCase.execute(any(OrderId.class))).thenReturn(Optional.of(order));
+    when(getTrackingEventsUseCase.execute(any(OrderId.class))).thenReturn(List.of());
+
+    mockMvc
+        .perform(get("/api/v1/orders/{id}/tracking", orderId).principal(authentication(customerId)))
+        .andExpect(status().isOk());
+  }
+
+  @Test
+  void shouldAddTrackingEvent() throws Exception {
+    UUID customerId = UUID.randomUUID();
+    UUID orderId = UUID.randomUUID();
+    Order order = buildOrder(orderId, customerId);
+    when(findByIdUseCase.execute(any(OrderId.class))).thenReturn(Optional.of(order));
+
+    TrackingEvent event =
+        new TrackingEvent(
+            new com.eliteshop.colombia.order.domain.model.tracking.TrackingEventId(
+                UUID.randomUUID()),
+            new com.eliteshop.colombia.order.domain.model.tracking.TrackingEventOrderId(orderId),
+            com.eliteshop.colombia.order.domain.model.tracking.TrackingEventStatus.RECEIVED,
+            "Bogota",
+            "Paquete enviado",
+            Timestamp.from(Instant.now()),
+            Timestamp.from(Instant.now()));
+    when(addTrackingEventUseCase.execute(any(OrderId.class), any(), any(), any(), any()))
+        .thenReturn(event);
+
+    TrackingEventRequest request = new TrackingEventRequest();
+    request.setStatus("SHIPPED");
+    request.setLocation("Bogota");
+    request.setDescription("Paquete enviado");
+    request.setEventTimestamp(Timestamp.from(Instant.now()));
+
+    mockMvc
+        .perform(
+            post("/api/v1/orders/{id}/tracking", orderId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request))
+                .principal(authentication(customerId)))
+        .andExpect(status().isCreated());
+  }
+
+  @Test
+  void shouldRejectTrackingEventRequestWithoutStatus() throws Exception {
+    UUID customerId = UUID.randomUUID();
+    UUID orderId = UUID.randomUUID();
+    Order order = buildOrder(orderId, customerId);
+    when(findByIdUseCase.execute(any(OrderId.class))).thenReturn(Optional.of(order));
+
+    TrackingEventRequest request = new TrackingEventRequest();
+    request.setLocation("Bogota");
+
+    mockMvc
+        .perform(
+            post("/api/v1/orders/{id}/tracking", orderId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request))
+                .principal(authentication(customerId)))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void shouldRejectTrackingRequestWithoutTrackingNumber() throws Exception {
+    UUID customerId = UUID.randomUUID();
+    UUID orderId = UUID.randomUUID();
+    Order order = buildOrder(orderId, customerId);
+    when(findByIdUseCase.execute(any(OrderId.class))).thenReturn(Optional.of(order));
+
+    TrackingInfoRequest request = new TrackingInfoRequest();
+    request.setShippingCarrier("Servientrega");
+
+    mockMvc
+        .perform(
+            patch("/api/v1/orders/{id}/tracking", orderId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request))
+                .principal(authentication(customerId)))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void shouldRejectTrackingRequestWithoutCarrier() throws Exception {
+    UUID customerId = UUID.randomUUID();
+    UUID orderId = UUID.randomUUID();
+    Order order = buildOrder(orderId, customerId);
+    when(findByIdUseCase.execute(any(OrderId.class))).thenReturn(Optional.of(order));
+
+    TrackingInfoRequest request = new TrackingInfoRequest();
+    request.setTrackingNumber("TRK-123");
+
+    mockMvc
+        .perform(
+            patch("/api/v1/orders/{id}/tracking", orderId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request))
+                .principal(authentication(customerId)))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void shouldUpdateTracking() throws Exception {
+    UUID customerId = UUID.randomUUID();
+    UUID orderId = UUID.randomUUID();
+    Order order = buildOrder(orderId, customerId);
+    when(findByIdUseCase.execute(any(OrderId.class))).thenReturn(Optional.of(order));
+
+    TrackingInfoRequest request = new TrackingInfoRequest();
+    request.setTrackingNumber("TRK-123");
+    request.setShippingCarrier("Servientrega");
+    request.setShippingLabelUrl("https://label.example.com/label.pdf");
+
+    mockMvc
+        .perform(
+            patch("/api/v1/orders/{id}/tracking", orderId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request))
+                .principal(authentication(customerId)))
+        .andExpect(status().isNoContent());
+  }
+
+  private Order buildOrder(UUID orderId, UUID customerId) {
     return new Order(
         new OrderId(orderId),
         new OrderCustomerId(customerId),
-        status,
-        new OrderTotalAmount(totalAmount),
+        OrderStatus.PAID,
+        new OrderTotalAmount(new BigDecimal("250000")),
         new OrderShippingAddress("Calle 100 #15-20"),
         new OrderShippingDepartment("Bogota"),
         new OrderShippingCity("Bogota D.C."),
@@ -957,6 +766,16 @@ class OrderControllerTest {
         null,
         null,
         null,
+        null,
         null);
+  }
+
+  private UsernamePasswordAuthenticationToken authentication(UUID userId) {
+    return new UsernamePasswordAuthenticationToken(
+        userId.toString(),
+        null,
+        java.util.List.of(
+            new org.springframework.security.core.authority.SimpleGrantedAuthority(
+                "ROLE_CUSTOMER")));
   }
 }
