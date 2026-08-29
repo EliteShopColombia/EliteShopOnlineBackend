@@ -7,18 +7,18 @@ import io.jsonwebtoken.security.Keys;
 import java.util.Date;
 import java.util.UUID;
 import javax.crypto.SecretKey;
-import org.springframework.beans.factory.annotation.Value;
 
 public class JwtService {
 
-  @Value("${jwt.secret:ZWxpdGVzaG9wLWNvbG9tYmItc2VjcmV0LWtleS1jaGFuZ2UtaW4tcHJvZHVjdGlvbg==}")
-  private String secret;
+  private final String secret;
+  private final long expiration;
+  private final String issuer;
 
-  @Value("${jwt.expiration:86400000}")
-  private long expiration;
-
-  @Value("${jwt.issuer:eliteshop-backend}")
-  private String issuer;
+  public JwtService(JwtProperties properties) {
+    this.secret = properties.getSecret();
+    this.expiration = properties.getExpiration();
+    this.issuer = properties.getIssuer();
+  }
 
   public String generateToken(String userId, String email, String role) {
     return generateToken(userId, email, role, null);

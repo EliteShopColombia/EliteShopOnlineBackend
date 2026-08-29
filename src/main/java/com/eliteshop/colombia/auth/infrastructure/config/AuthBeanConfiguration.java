@@ -5,16 +5,18 @@ import com.eliteshop.colombia.auth.application.RefreshUseCase;
 import com.eliteshop.colombia.auth.application.RegisterUseCase;
 import com.eliteshop.colombia.auth.infrastructure.filter.JwtAuthFilter;
 import com.eliteshop.colombia.customer.domain.repository.CustomerRepository;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration
+@EnableConfigurationProperties(JwtProperties.class)
 public class AuthBeanConfiguration {
 
   @Bean
-  public JwtService jwtService() {
-    return new JwtService();
+  public JwtService jwtService(JwtProperties jwtProperties) {
+    return new JwtService(jwtProperties);
   }
 
   @Bean
