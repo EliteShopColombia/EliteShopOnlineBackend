@@ -46,7 +46,8 @@ public class Cart {
       CartItemProductId productId, CartItemQuantity quantity, CartItemUnitPrice unitPrice) {
     Optional<CartItem> existing = findItemByProductId(productId.getValue());
     if (existing.isPresent()) {
-      throw new IllegalStateException("El producto ya está en el carrito, usa updateItemQuantity");
+      throw new com.eliteshop.colombia.cart.domain.exception.CartItemAlreadyExistsException(
+          "El producto ya esta en el carrito, usa updateItemQuantity");
     }
     ((ArrayList<CartItem>) this.items)
         .add(CartItem.create(this.id, productId, quantity, unitPrice));
@@ -61,7 +62,8 @@ public class Cart {
         return;
       }
     }
-    throw new IllegalStateException("Item no encontrado en el carrito");
+    throw new com.eliteshop.colombia.cart.domain.exception.CartItemNotFoundException(
+        "Item no encontrado en el carrito");
   }
 
   public void removeItem(CartItemId itemId) {

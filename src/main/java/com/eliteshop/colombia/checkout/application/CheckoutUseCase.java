@@ -8,6 +8,7 @@ import com.eliteshop.colombia.checkout.domain.exception.CvvRequiredException;
 import com.eliteshop.colombia.checkout.domain.exception.EmptyCartException;
 import com.eliteshop.colombia.checkout.domain.exception.InsufficientStockException;
 import com.eliteshop.colombia.checkout.domain.exception.PaymentFailedException;
+import com.eliteshop.colombia.customer.domain.exception.CustomerNotFoundException;
 import com.eliteshop.colombia.customer.domain.model.Customer;
 import com.eliteshop.colombia.customer.domain.repository.CustomerRepository;
 import com.eliteshop.colombia.order.application.OrderUpdateUseCase;
@@ -33,6 +34,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
 
 @Slf4j
@@ -84,7 +86,7 @@ public class CheckoutUseCase {
     Customer customer =
         customerRepository
             .findById(new com.eliteshop.colombia.customer.domain.model.CustomerId(customerId))
-            .orElseThrow(() -> new IllegalStateException("Customer no encontrado"));
+            .orElseThrow(() -> new CustomerNotFoundException("Customer no encontrado"));
 
     sellerRepository
         .findByEmail(customer.getEmail().getValue())
@@ -104,8 +106,7 @@ public class CheckoutUseCase {
               }
             });
 
-    // 4. Procesar pago ANTES de guardar la orden
-
+    // 4. Procesar pago (outside transaction - reactive HTTP call)
     String tempInvoice = "ESC-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
 
     Payment payment = processPayment(customer, null, cart.getTotal(), request, tempInvoice).block();
@@ -114,52 +115,29 @@ public class CheckoutUseCase {
       throw new PaymentFailedException("El pago no fue aprobado. Estado: " + payment.getStatus());
     }
 
-    // 4. Solo si el pago fue aprobado, crear la orden
-    Order order = buildOrder(customerId, cart, request);
-    Order savedOrder = orderRepository.save(order);
-
-    // 5. Crear OrderItems
-    List<OrderItem> orderItems =
-        cart.getItems().stream()
-            .map(item -> buildOrderItem(savedOrder.getId().getValue(), item))
-            .collect(Collectors.toList());
-    orderItemRepository.saveAll(orderItems);
-
-    // 6. Asociar pago a la orden y guardar
-    payment =
-        Payment.builder()
-            .id(payment.getId())
-            .orderId(savedOrder.getId().getValue())
-            .amount(payment.getAmount())
-            .currency(payment.getCurrency())
-            .method(payment.getMethod())
-            .status(payment.getStatus())
-            .epaycoRefId(payment.getEpaycoRefId())
-            .invoice(payment.getInvoice())
-            .customerEmail(payment.getCustomerEmail())
-            .createdAt(payment.getCreatedAt())
-            .updatedAt(payment.getUpdatedAt())
-            .build();
-    paymentRepository.save(payment);
-
-    // 7. Publicar evento de orden creada (despues de pago aprobado)
-    eventPublisher.publishEvent(
-        OrderCreatedEvent.of(
-            savedOrder.getId().getValue(),
-            savedOrder.getCustomerId().getValue(),
-            savedOrder.getTotalAmount().getValue()));
-
-    // 8. Confirmar orden (dispara evento de cambio de estado)
-    orderUpdateUseCase.execute(buildConfirmedOrder(savedOrder));
-
-    // 9. Reducir stock
-    for (CartItem item : cart.getItems()) {
-      productRepository.reduceStock(
-          new ProductId(item.getProductId().getValue()), item.getQuantity().getValue());
+    // 5. Persist everything atomically (transactional boundary)
+    Order savedOrder;
+    try {
+      savedOrder = persistOrderAndItems(customerId, cart, request, payment);
+    } catch (Exception e) {
+      log.error(
+          "Error persistiendo orden para cliente {}, invocando compensacion de pago", customerId);
+      compensatePayment(payment);
+      throw new PaymentFailedException(
+          "Error al crear la orden despues del pago. Pago revertido.", e);
     }
 
-    // 10. Limpiar carrito
-    cartRepository.deleteByCustomerId(customerId);
+    // 6. Publicar evento, confirmar orden, reducir stock, limpiar carrito
+    try {
+      postPaymentActions(customerId, savedOrder, cart);
+    } catch (Exception e) {
+      log.error(
+          "Error en post-pago para orden {}, invocando compensacion completa",
+          savedOrder.getId().getValue());
+      compensatePostPayment(savedOrder, payment, customerId);
+      throw new PaymentFailedException(
+          "Error despues del pago. Acciones compensatorias ejecutadas.", e);
+    }
 
     log.info(
         "Checkout completado exitosamente. Orden: {}, Pago: {}",
@@ -175,6 +153,104 @@ public class CheckoutUseCase {
         cart.getTotal());
   }
 
+  @Transactional
+  protected Order persistOrderAndItems(
+      UUID customerId, Cart cart, CheckoutRequestFields request, Payment payment) {
+    // Build and save order
+    Order order = buildOrder(customerId, cart, request);
+    Order savedOrder = orderRepository.save(order);
+
+    // Build and save order items
+    List<OrderItem> orderItems =
+        cart.getItems().stream()
+            .map(item -> buildOrderItem(savedOrder.getId().getValue(), item))
+            .collect(Collectors.toList());
+    orderItemRepository.saveAll(orderItems);
+
+    // Associate payment with order and save
+    payment =
+        Payment.builder()
+            .id(payment.getId())
+            .orderId(savedOrder.getId().getValue())
+            .sellerId(payment.getSellerId())
+            .amount(payment.getAmount())
+            .currency(payment.getCurrency())
+            .method(payment.getMethod())
+            .status(payment.getStatus())
+            .epaycoRefId(payment.getEpaycoRefId())
+            .sessionId(payment.getSessionId())
+            .invoice(payment.getInvoice())
+            .customerEmail(payment.getCustomerEmail())
+            .createdAt(payment.getCreatedAt())
+            .updatedAt(payment.getUpdatedAt())
+            .platformFee(payment.getPlatformFee())
+            .sellerAmount(payment.getSellerAmount())
+            .build();
+    paymentRepository.save(payment);
+
+    return savedOrder;
+  }
+
+  private void postPaymentActions(UUID customerId, Order savedOrder, Cart cart) {
+    // Publish order created event
+    eventPublisher.publishEvent(
+        OrderCreatedEvent.of(
+            savedOrder.getId().getValue(),
+            savedOrder.getCustomerId().getValue(),
+            savedOrder.getTotalAmount().getValue()));
+
+    // Confirm order (triggers status change event)
+    orderUpdateUseCase.execute(buildConfirmedOrder(savedOrder));
+
+    // Reduce stock for each item
+    for (CartItem item : cart.getItems()) {
+      productRepository.reduceStock(
+          new ProductId(item.getProductId().getValue()), item.getQuantity().getValue());
+    }
+
+    // Clear cart
+    cartRepository.deleteByCustomerId(customerId);
+  }
+
+  private void compensatePayment(Payment payment) {
+    log.warn(
+        "Compensacion de pago pendiente: pago {} requiere reversa manual via epayco (refId: {})",
+        payment.getId(),
+        payment.getEpaycoRefId());
+  }
+
+  private void compensatePostPayment(Order savedOrder, Payment payment, UUID customerId) {
+    // Attempt to cancel the order (sets status to CANCELLED)
+    try {
+      log.warn("Compensacion: intentando cancelar orden {}", savedOrder.getId().getValue());
+      Order cancelledOrder =
+          new Order(
+              savedOrder.getId(),
+              savedOrder.getCustomerId(),
+              OrderStatus.CANCELLED,
+              savedOrder.getTotalAmount(),
+              savedOrder.getShippingAddress(),
+              savedOrder.getShippingDepartment(),
+              savedOrder.getShippingCity(),
+              savedOrder.getCreatedAt(),
+              new OrderUpdatedAt(new Timestamp(System.currentTimeMillis())),
+              savedOrder.getTrackingNumber(),
+              savedOrder.getShippingCarrier(),
+              savedOrder.getShippingLabelUrl(),
+              savedOrder.getDisputeReason());
+      orderUpdateUseCase.execute(cancelledOrder);
+      log.info("Compensacion: orden {} cancelada", savedOrder.getId().getValue());
+    } catch (Exception e) {
+      log.error(
+          "Compensacion: no se pudo cancelar orden {}. Pago requiere reversa manual.",
+          savedOrder.getId().getValue(),
+          e);
+    }
+
+    // Attempt to refund the payment
+    compensatePayment(payment);
+  }
+
   private Order buildOrder(UUID customerId, Cart cart, CheckoutRequestFields request) {
     return new Order(
         new OrderId(UUID.randomUUID()),
@@ -185,6 +261,7 @@ public class CheckoutUseCase {
         new OrderShippingDepartment(request.shippingDepartment),
         new OrderShippingCity(request.shippingCity),
         new OrderCreatedAt(new Timestamp(System.currentTimeMillis())),
+        null,
         null,
         null,
         null,
@@ -204,7 +281,8 @@ public class CheckoutUseCase {
         new OrderUpdatedAt(new Timestamp(System.currentTimeMillis())),
         order.getTrackingNumber(),
         order.getShippingCarrier(),
-        order.getShippingLabelUrl());
+        order.getShippingLabelUrl(),
+        null);
   }
 
   private OrderItem buildOrderItem(UUID orderId, CartItem item) {
@@ -233,14 +311,14 @@ public class CheckoutUseCase {
     String invoice = tempInvoice;
 
     if (!request.isNewCard()) {
-      // Método guardado: requiere CVV
+      // Saved method: requires CVV
       if (request.cvv == null || request.cvv.isBlank()) {
-        return Mono.error(new CvvRequiredException("El CVV es requerido para métodos guardados"));
+        return Mono.error(new CvvRequiredException("El CVV es requerido para metodos guardados"));
       }
       CustomerPaymentMethod method =
           paymentMethodRepository
               .findById(request.paymentMethodId)
-              .orElseThrow(() -> new IllegalStateException("Método de pago no encontrado"));
+              .orElseThrow(() -> new PaymentFailedException("Metodo de pago no encontrado"));
 
       return paymentGateway
           .chargeWithToken(
@@ -259,14 +337,14 @@ public class CheckoutUseCase {
           .map(payment -> enrichPayment(payment, customer, orderId, amount, invoice));
     }
 
-    // Nueva tarjeta: validar datos
+    // New card: validate data
     if (request.cardNumber == null
         || request.expiryMonth == null
         || request.expiryYear == null
         || request.cvv == null
         || request.cvv.isBlank()) {
       return Mono.error(
-          new IllegalArgumentException("Datos de tarjeta incompletos para nueva tarjeta"));
+          new InsufficientStockException("Datos de tarjeta incompletos para nueva tarjeta"));
     }
 
     return paymentGateway
