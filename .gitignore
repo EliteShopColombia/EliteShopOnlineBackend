@@ -70,3 +70,4 @@ skills-lock.json
 # ---------- Test ----------
 *.h2.db
 *.mv.db
+PLAN_Q4_JAVADOC.md
