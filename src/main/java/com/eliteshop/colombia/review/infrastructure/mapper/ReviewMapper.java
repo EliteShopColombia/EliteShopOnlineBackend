@@ -44,11 +44,16 @@ public class ReviewMapper {
 
   public Review toDomainFromRequest(ReviewRequest request) {
     if (request == null) return null;
+    return toDomainFromRequest(request, request.getCustomerId());
+  }
+
+  public Review toDomainFromRequest(ReviewRequest request, java.util.UUID customerId) {
+    if (request == null) return null;
 
     return new Review(
         ReviewId.generate(),
         new ReviewProductId(request.getProductId()),
-        new ReviewCustomerId(request.getCustomerId()),
+        new ReviewCustomerId(customerId),
         request.getQualify() != null ? new ReviewQualify(request.getQualify()) : null,
         request.getContent() != null ? new ReviewContent(request.getContent()) : null,
         new ArrayList<>());

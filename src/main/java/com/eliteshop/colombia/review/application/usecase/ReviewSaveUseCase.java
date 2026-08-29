@@ -28,7 +28,8 @@ public class ReviewSaveUseCase {
           "El cliente {} no ha comprado el producto {}",
           review.getCustomerId(),
           review.getProductId());
-      throw new IllegalStateException("Solo puedes reseñar productos que hayas comprado");
+      throw new com.eliteshop.colombia.review.domain.exception.ReviewNotPurchasedException(
+          "Solo puedes reseñar productos que hayas comprado");
     }
 
     repository.save(review);

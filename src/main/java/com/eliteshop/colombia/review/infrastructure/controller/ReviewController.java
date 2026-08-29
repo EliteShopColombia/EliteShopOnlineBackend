@@ -8,6 +8,7 @@ import com.eliteshop.colombia.review.domain.model.ReviewImageId;
 import com.eliteshop.colombia.review.domain.model.ReviewImageOrder;
 import com.eliteshop.colombia.review.domain.model.ReviewImageUrl;
 import com.eliteshop.colombia.review.domain.model.ReviewProductId;
+import com.eliteshop.colombia.review.domain.repository.ReviewImageRepository;
 import com.eliteshop.colombia.review.infrastructure.adapter.ReviewMinIOAdapter;
 import com.eliteshop.colombia.review.infrastructure.controller.dto.ReviewRequest;
 import com.eliteshop.colombia.review.infrastructure.controller.dto.ReviewResponse;
@@ -23,6 +24,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -38,16 +40,24 @@ public class ReviewController {
   private final ReviewFindByProductIdUseCase findByProductIdUseCase;
   private final ReviewMapper mapper;
   private final ReviewMinIOAdapter minIOAdapter;
+  private final ReviewImageRepository reviewImageRepository;
+  private final com.eliteshop.colombia.shared.security.AuthorizationService authorizationService;
 
   @PostMapping("/reviews")
   public ResponseEntity<ReviewResponse> save(
       @Valid @RequestPart("review") ReviewRequest request,
-      @RequestPart(value = "images", required = false) List<MultipartFile> images) {
-    Review review = mapper.toDomainFromRequest(request);
+      @RequestPart(value = "images", required = false) List<MultipartFile> images,
+      Authentication authentication) {
+    Review review =
+        mapper.toDomainFromRequest(
+            request, authorizationService.authenticatedUserId(authentication));
     saveUseCase.execute(review);
 
     if (images != null && !images.isEmpty()) {
       List<ReviewImage> reviewImages = uploadReviewImages(review.getId(), images);
+      for (ReviewImage image : reviewImages) {
+        reviewImageRepository.save(image);
+      }
       review =
           new Review(
               review.getId(),
@@ -62,7 +72,9 @@ public class ReviewController {
   }
 
   @DeleteMapping("/reviews/{id}")
-  public ResponseEntity<Void> delete(@PathVariable UUID id) {
+  public ResponseEntity<Void> delete(@PathVariable UUID id, Authentication authentication) {
+    Review review = findByIdUseCase.execute(new ReviewId(id)).orElseThrow();
+    authorizationService.requireCustomer(authentication, review.getCustomerId().getValue());
     deleteUseCase.execute(new ReviewId(id));
     return ResponseEntity.noContent().build();
   }
@@ -113,7 +125,8 @@ public class ReviewController {
         reviewImages.add(image);
         order++;
       } catch (Exception e) {
-        throw new RuntimeException("Error subiendo imagen de review", e);
+        throw new com.eliteshop.colombia.shared.exception.StorageException(
+            "Error subiendo imagen de review", e);
       }
     }
 
