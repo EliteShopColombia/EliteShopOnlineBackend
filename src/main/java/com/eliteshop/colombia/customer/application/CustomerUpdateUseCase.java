@@ -1,6 +1,6 @@
 package com.eliteshop.colombia.customer.application;
 
-import com.eliteshop.colombia.customer.domain.exception.CustomerNotExistException;
+import com.eliteshop.colombia.customer.domain.exception.CustomerNotFoundException;
 import com.eliteshop.colombia.customer.domain.model.Customer;
 import com.eliteshop.colombia.customer.domain.repository.CustomerRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,10 +17,12 @@ public class CustomerUpdateUseCase {
 
     if (customer.getId() == null || repository.findById(customer.getId()).isEmpty()) {
       log.error("Cliente no encontrado para actualización con id: {}", customer.getId());
-      throw new CustomerNotExistException("The customer not exist in our platform");
+      throw new CustomerNotFoundException("Customer no encontrado con id: " + customer.getId());
     }
 
     this.repository.update(customer);
-    log.info("Cliente actualizado exitosamente con id: {}", customer.getId());
+    log.info(
+        "Cliente actualizado exitosaif (customer.getId() == null || repository.findBymente con id: {}",
+        customer.getId());
   }
 }

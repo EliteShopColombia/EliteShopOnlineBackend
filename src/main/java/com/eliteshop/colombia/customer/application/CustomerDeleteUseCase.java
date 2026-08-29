@@ -1,6 +1,6 @@
 package com.eliteshop.colombia.customer.application;
 
-import com.eliteshop.colombia.customer.domain.exception.CustomerNotExistException;
+import com.eliteshop.colombia.customer.domain.exception.CustomerNotFoundException;
 import com.eliteshop.colombia.customer.domain.model.CustomerId;
 import com.eliteshop.colombia.customer.domain.repository.CustomerRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +17,7 @@ public class CustomerDeleteUseCase {
 
     if (!repository.findById(id).isPresent()) {
       log.error("Cliente no encontrado con id: {}", id);
-      throw new CustomerNotExistException("The customer not exist in our platform");
+      throw new CustomerNotFoundException("Customer no encontrado con id: " + id);
     }
 
     this.repository.delete(id);

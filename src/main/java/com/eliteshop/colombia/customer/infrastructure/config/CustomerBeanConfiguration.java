@@ -1,10 +1,12 @@
 package com.eliteshop.colombia.customer.infrastructure.config;
 
+import com.eliteshop.colombia.customer.application.CustomerAvatarUseCase;
 import com.eliteshop.colombia.customer.application.CustomerDeleteUseCase;
 import com.eliteshop.colombia.customer.application.CustomerFindAllUseCase;
 import com.eliteshop.colombia.customer.application.CustomerFindByIdUseCase;
 import com.eliteshop.colombia.customer.application.CustomerUpdateUseCase;
 import com.eliteshop.colombia.customer.domain.repository.CustomerRepository;
+import com.eliteshop.colombia.customer.infrastructure.adapter.CustomerMinIOAdapter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -29,5 +31,11 @@ public class CustomerBeanConfiguration {
   @Bean
   public CustomerFindByIdUseCase customerFindByIdUseCase(CustomerRepository repository) {
     return new CustomerFindByIdUseCase(repository);
+  }
+
+  @Bean
+  public CustomerAvatarUseCase customerAvatarUseCase(
+      CustomerMinIOAdapter minIOAdapter, CustomerRepository repository) {
+    return new CustomerAvatarUseCase(minIOAdapter, repository);
   }
 }
