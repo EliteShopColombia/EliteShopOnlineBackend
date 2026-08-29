@@ -18,7 +18,7 @@ public class SellerFindContactBySellerIdUseCase {
 
     Optional<Seller> seller = findByIdUseCase.execute(sellerId).filter(s -> s.getContact() != null);
     seller.ifPresent(s -> log.info("Contacto encontrado para sellerId={}", sellerId));
-    if (seller.isEmpty()) log.info("No se encontro contacto para sellerId={}", sellerId);
+    if (seller.isEmpty()) log.info("No se encontró contacto para sellerId={}", sellerId);
     return seller;
   }
 }

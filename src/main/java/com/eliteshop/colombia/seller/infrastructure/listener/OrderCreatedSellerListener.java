@@ -43,6 +43,6 @@ public class OrderCreatedSellerListener {
     slackWebhookAdapter.sendToChannel("pedidos-test", message);
 
     log.info(
-        "Notificacion de pedido enviada al canal pedidos-test para orderId={}", event.orderId());
+        "Notificación de pedido enviada al canal pedidos-test para orderId={}", event.orderId());
   }
 }

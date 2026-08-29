@@ -19,7 +19,7 @@ public class SellerFindByIdUseCase {
 
     Optional<Seller> seller = repository.findById(id);
     seller.ifPresent(s -> log.info("Vendedor encontrado con id={}", id));
-    if (seller.isEmpty()) log.info("No se encontro vendedor con id={}", id);
+    if (seller.isEmpty()) log.info("No se encontró vendedor con id={}", id);
     return seller;
   }
 }

@@ -1,6 +1,7 @@
 package com.eliteshop.colombia.seller.application.usecase;
 
 import com.eliteshop.colombia.seller.domain.event.SellerVerificationCompletedEvent;
+import com.eliteshop.colombia.seller.domain.exception.SellerNotFoundException;
 import com.eliteshop.colombia.seller.domain.model.Seller;
 import com.eliteshop.colombia.seller.domain.model.SellerId;
 import com.eliteshop.colombia.seller.domain.model.verification.*;
@@ -25,7 +26,7 @@ public class VerifySellerUseCase {
   private final ApplicationEventPublisher eventPublisher;
 
   public SellerVerification uploadDocument(UUID sellerId, String filename, InputStream stream) {
-    log.info("Subiendo documento de verificacion para vendedor sellerId={}", sellerId);
+    log.info("Subiendo documento de verificación para vendedor sellerId={}", sellerId);
     String objectKey = minIOAdapter.uploadDocument(sellerId.toString(), filename, stream);
 
     Seller seller =
@@ -34,7 +35,7 @@ public class VerifySellerUseCase {
             .orElseThrow(
                 () -> {
                   log.error("Vendedor no encontrado sellerId={}", sellerId);
-                  return new RuntimeException("Vendedor no encontrado");
+                  return new SellerNotFoundException("Vendedor no encontrado");
                 });
 
     SellerVerification verification =
@@ -51,7 +52,7 @@ public class VerifySellerUseCase {
   }
 
   public SellerVerification uploadSelfie(UUID sellerId, String filename, InputStream stream) {
-    log.info("Subiendo selfie de verificacion para vendedor sellerId={}", sellerId);
+    log.info("Subiendo selfie de verificación para vendedor sellerId={}", sellerId);
     String objectKey = minIOAdapter.uploadSelfie(sellerId.toString(), filename, stream);
 
     SellerVerification verification =
@@ -60,9 +61,10 @@ public class VerifySellerUseCase {
             .orElseThrow(
                 () -> {
                   log.error(
-                      "No existe verificacion pendiente para sellerId={}, suba la cedula primero",
+                      "No existe verificación pendiente para sellerId={}, suba la cedula primero",
                       sellerId);
-                  return new RuntimeException("Sube la cedula primero");
+                  return new com.eliteshop.colombia.seller.domain.exception
+                      .SellerVerificationException("Sube la cedula primero");
                 });
 
     verification = verification.withSelfieUploaded(new SellerVerificationSelfieMinioKey(objectKey));
@@ -71,22 +73,24 @@ public class VerifySellerUseCase {
   }
 
   public SellerVerification validate(UUID sellerId) {
-    log.info("Validando verificacion para vendedor sellerId={}", sellerId);
+    log.info("Validando verificación para vendedor sellerId={}", sellerId);
     SellerVerification verification =
         repository
             .findBySellerId(sellerId)
             .orElseThrow(
                 () -> {
-                  log.error("No hay verificacion pendiente para sellerId={}", sellerId);
-                  return new RuntimeException("No hay verificacion pendiente");
+                  log.error("No hay verificación pendiente para sellerId={}", sellerId);
+                  return new com.eliteshop.colombia.seller.domain.exception
+                      .SellerVerificationException("No hay verificación pendiente");
                 });
 
     if (!"SELFIE_UPLOADED".equals(verification.getStatus().getValue())) {
       log.error(
-          "Verificacion en estado incorrecto para sellerId={}: {}",
+          "Verificación en estado incorrecto para sellerId={}: {}",
           sellerId,
           verification.getStatus().getValue());
-      throw new RuntimeException("Primero sube la cedula y la selfie");
+      throw new com.eliteshop.colombia.seller.domain.exception.SellerVerificationException(
+          "Primero sube la cedula y la selfie");
     }
 
     String selfieObject = verification.getSelfieMinioKey().getValue();
@@ -111,7 +115,7 @@ public class VerifySellerUseCase {
             sellerId, isApproved, result.confidence(), result.message(), Instant.now()));
 
     log.info(
-        "Verificacion completada para sellerId={}, aprobado={}, confianza={}",
+        "Verificación completada para sellerId={}, aprobado={}, confianza={}",
         sellerId,
         isApproved,
         result.confidence());
@@ -119,13 +123,13 @@ public class VerifySellerUseCase {
   }
 
   public SellerVerification getStatus(UUID sellerId) {
-    log.info("Consultando estado de verificacion para vendedor sellerId={}", sellerId);
+    log.info("Consultando estado de verificación para vendedor sellerId={}", sellerId);
     return repository
         .findBySellerId(sellerId)
         .orElseThrow(
             () -> {
-              log.error("No hay verificacion para sellerId={}", sellerId);
-              return new RuntimeException("No hay verificacion para este vendedor");
+              log.error("No hay verificación para sellerId={}", sellerId);
+              return new SellerNotFoundException("No hay verificación para este vendedor");
             });
   }
 }

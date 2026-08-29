@@ -6,6 +6,7 @@ import com.eliteshop.colombia.seller.domain.repository.SellerRepository;
 import com.eliteshop.colombia.seller.infrastructure.adapter.FaceMatcherAdapter;
 import com.eliteshop.colombia.seller.infrastructure.adapter.MinIOAdapter;
 import java.util.concurrent.ThreadPoolExecutor;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,6 +14,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.web.reactive.function.client.WebClient;
 
 @Configuration
+@EnableConfigurationProperties(FaceMatcherProperties.class)
 public class SellerVerificationBeanConfiguration {
 
   @Bean

@@ -7,6 +7,7 @@ import com.eliteshop.colombia.seller.domain.repository.SellerRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -15,6 +16,7 @@ public class SellerSaveUseCase {
   private final SellerRepository repository;
   private final ApplicationEventPublisher eventPublisher;
 
+  @Transactional
   public void execute(Seller seller) {
     log.info("Guardando vendedor con dni={}", seller.getDniNumber());
     repository

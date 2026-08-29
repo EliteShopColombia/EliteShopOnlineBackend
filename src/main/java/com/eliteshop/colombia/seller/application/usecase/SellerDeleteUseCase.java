@@ -15,7 +15,7 @@ public class SellerDeleteUseCase {
   public void execute(SellerId id) {
     log.info("Intentando eliminar vendedor con id={}", id);
     if (repository.findById(id).isEmpty()) {
-      log.error("No se encontro el vendedor con id={}", id);
+      log.error("No se encontró el vendedor con id={}", id);
       throw new SellerNotFoundException("El vendedor no existe en la plataforma");
     }
 

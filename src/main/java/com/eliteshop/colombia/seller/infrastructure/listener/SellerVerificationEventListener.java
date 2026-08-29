@@ -31,7 +31,7 @@ public class SellerVerificationEventListener {
   @EventListener
   public void handleVerificationCompleted(SellerVerificationCompletedEvent event) {
     log.info(
-        "Evento de verificacion recibido: sellerId={}, verified={}",
+        "Evento de verificación recibido: sellerId={}, verified={}",
         event.sellerId(),
         event.verified());
 
@@ -45,7 +45,7 @@ public class SellerVerificationEventListener {
       emailService.sendRejectedEmail(event);
     }
 
-    log.info("Verificacion procesada para sellerId={}", event.sellerId());
+    log.info("Verificación procesada para sellerId={}", event.sellerId());
   }
 
   private void updateSellerVerifiedStatus(UUID sellerId, boolean verified) {
@@ -57,7 +57,7 @@ public class SellerVerificationEventListener {
               seller.setUpdatedAt(Timestamp.from(Instant.now()));
               sellerRepository.save(seller);
               log.info(
-                  "Estado de verificacion actualizado: sellerId={}, isVerified={}",
+                  "Estado de verificación actualizado: sellerId={}, isVerified={}",
                   sellerId,
                   verified);
             });

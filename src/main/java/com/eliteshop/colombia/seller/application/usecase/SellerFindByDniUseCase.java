@@ -19,7 +19,7 @@ public class SellerFindByDniUseCase {
 
     Optional<Seller> seller = repository.findByDniNumber(dniNumber);
     seller.ifPresent(s -> log.info("Vendedor encontrado con dni={}", dniNumber));
-    if (seller.isEmpty()) log.info("No se encontro vendedor con dni={}", dniNumber);
+    if (seller.isEmpty()) log.info("No se encontró vendedor con dni={}", dniNumber);
     return seller;
   }
 }

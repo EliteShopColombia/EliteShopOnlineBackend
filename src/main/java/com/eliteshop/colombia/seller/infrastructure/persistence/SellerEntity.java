@@ -48,6 +48,9 @@ public class SellerEntity {
   @Column(name = "seller_update_at", nullable = true)
   private Timestamp updatedAt;
 
+  @Column(name = "seller_profile_image", nullable = true, length = 500)
+  private String profileImage;
+
   @OneToOne(mappedBy = "seller", cascade = CascadeType.ALL)
   private SellerContactEntity contact;
 

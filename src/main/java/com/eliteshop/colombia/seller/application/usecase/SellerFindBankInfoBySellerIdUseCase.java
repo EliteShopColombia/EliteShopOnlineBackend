@@ -13,14 +13,14 @@ public class SellerFindBankInfoBySellerIdUseCase {
   private final SellerFindByIdUseCase findByIdUseCase;
 
   public Optional<Seller> execute(SellerId sellerId) {
-    log.info("Buscando informacion bancaria del vendedor sellerId={}", sellerId);
+    log.info("Buscando información bancaria del vendedor sellerId={}", sellerId);
     if (sellerId == null) return Optional.empty();
 
     Optional<Seller> seller =
         findByIdUseCase.execute(sellerId).filter(s -> s.getBankInfo() != null);
-    seller.ifPresent(s -> log.info("Informacion bancaria encontrada para sellerId={}", sellerId));
+    seller.ifPresent(s -> log.info("Información bancaria encontrada para sellerId={}", sellerId));
     if (seller.isEmpty())
-      log.info("No se encontro informacion bancaria para sellerId={}", sellerId);
+      log.info("No se encontró información bancaria para sellerId={}", sellerId);
     return seller;
   }
 }

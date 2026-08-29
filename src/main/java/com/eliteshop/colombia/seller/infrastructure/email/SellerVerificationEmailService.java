@@ -23,7 +23,7 @@ public class SellerVerificationEmailService {
   private final TemplateEngine templateEngine;
   private final SellerJpaRepository sellerRepository;
 
-  @Value("${spring.mail.username:noreply@eliteshop.com}")
+  @Value("${spring.mail.username}")
   private String fromEmail;
 
   @Async
@@ -55,7 +55,7 @@ public class SellerVerificationEmailService {
       helper.setText(htmlContent, true);
 
       mailSender.send(message);
-      log.info("Email de verificacion aprobada enviado a: {}", toEmail);
+      log.info("Email de verificación aprobada enviado a: {}", toEmail);
     } catch (Exception e) {
       log.error("Error enviando email de aprobacion: {}", e.getMessage());
     }
@@ -87,11 +87,11 @@ public class SellerVerificationEmailService {
       var helper = new MimeMessageHelper(message, true, "UTF-8");
       helper.setFrom(fromEmail);
       helper.setTo(toEmail);
-      helper.setSubject("EliteShop Colombia - Verificacion Rechazada");
+      helper.setSubject("EliteShop Colombia - Verificación Rechazada");
       helper.setText(htmlContent, true);
 
       mailSender.send(message);
-      log.info("Email de verificacion rechazada enviado a: {}", toEmail);
+      log.info("Email de verificación rechazada enviado a: {}", toEmail);
     } catch (Exception e) {
       log.error("Error enviando email de rechazo: {}", e.getMessage());
     }

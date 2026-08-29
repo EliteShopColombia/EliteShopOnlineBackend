@@ -1,7 +1,9 @@
 package com.eliteshop.colombia.seller.infrastructure.config;
 
+import com.eliteshop.colombia.seller.application.SellerAvatarUseCase;
 import com.eliteshop.colombia.seller.application.usecase.*;
 import com.eliteshop.colombia.seller.domain.repository.SellerRepository;
+import com.eliteshop.colombia.seller.infrastructure.adapter.SellerMinIOAdapter;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -50,5 +52,11 @@ public class SellerBeanConfiguration {
   @Bean
   public SellerUpdateUseCase sellerUpdateUseCase(SellerRepository sellerRepository) {
     return new SellerUpdateUseCase(sellerRepository);
+  }
+
+  @Bean
+  public SellerAvatarUseCase sellerAvatarUseCase(
+      SellerMinIOAdapter minIOAdapter, SellerRepository sellerRepository) {
+    return new SellerAvatarUseCase(minIOAdapter, sellerRepository);
   }
 }

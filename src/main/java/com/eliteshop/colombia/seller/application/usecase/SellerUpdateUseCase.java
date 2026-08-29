@@ -15,7 +15,7 @@ public class SellerUpdateUseCase {
   public void execute(Seller seller) {
     log.info("Actualizando vendedor con id={}", seller.getId());
     if (seller.getId() == null || repository.findById(seller.getId()).isEmpty()) {
-      log.error("No se encontro el vendedor con id={}", seller.getId());
+      log.error("No se encontró el vendedor con id={}", seller.getId());
       throw new SellerNotFoundException("El vendedor no existe en la plataforma");
     }
 

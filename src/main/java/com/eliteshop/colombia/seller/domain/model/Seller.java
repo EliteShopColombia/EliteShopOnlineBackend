@@ -17,6 +17,7 @@ public class Seller {
   @NonNull private final SellerIsVerified isVerified;
   @NonNull private final SellerCreatedAt createdAt;
   private final SellerUpdatedAt updatedAt;
+  private final SellerProfileImage profileImage;
   private final SellerContact contact;
   private final SellerBankInfo bankInfo;
 }
