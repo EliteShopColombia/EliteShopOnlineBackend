@@ -1,11 +1,13 @@
 package com.eliteshop.colombia.payment.application.usecase;
 
+import com.eliteshop.colombia.payment.domain.exception.PaymentGatewayException;
 import com.eliteshop.colombia.payment.domain.exception.PaymentNotFoundException;
 import com.eliteshop.colombia.payment.domain.model.*;
 import com.eliteshop.colombia.payment.domain.port.*;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
 @Slf4j
@@ -29,7 +31,7 @@ public class ConfirmPaymentUseCase {
                       payment -> {
                         if (payment.getStatus() == PaymentStatus.APPROVED) {
                           log.info(
-                              "Pago ya aprobado, ignorando actualizacion para refId: {}", refId);
+                              "Pago ya aprobado, ignorando actualización para refId: {}", refId);
                           return Mono.just(payment);
                         }
 
@@ -51,6 +53,18 @@ public class ConfirmPaymentUseCase {
             e -> {
               if (e instanceof PaymentNotFoundException) {
                 return Mono.error(e);
+              }
+              if (e instanceof WebClientResponseException httpEx) {
+                if (httpEx.getStatusCode().is4xxClientError()) {
+                  log.warn(
+                      "ePayco transacción no encontrada para refId={}: {}",
+                      refId,
+                      httpEx.getMessage());
+                  return Mono.error(
+                      new PaymentNotFoundException("Pago no encontrado para refId: " + refId));
+                }
+                log.error("Error ePayco confirmando pago refId={}: {}", refId, httpEx.getMessage());
+                return Mono.error(new PaymentGatewayException("Error consultando ePayco", httpEx));
               }
               log.error("Error confirmando pago refId={}: {}", refId, e.getMessage());
               return Mono.error(e);

@@ -1,9 +1,14 @@
 package com.eliteshop.colombia.payment.infrastructure.controller;
 
 import com.eliteshop.colombia.payment.application.usecase.ConfirmPaymentUseCase;
+import com.eliteshop.colombia.payment.infrastructure.config.GatewayProperties;
+import com.eliteshop.colombia.shared.notification.infrastructure.controller.WebhookSignatureValidator;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,23 +19,39 @@ import org.springframework.web.bind.annotation.*;
 public class WebhookController {
 
   private final ConfirmPaymentUseCase confirmPaymentUseCase;
+  private final GatewayProperties gatewayProperties;
+  private final ObjectMapper objectMapper = new ObjectMapper();
 
   @PostMapping
-  public ResponseEntity<Void> handleWebhook(@RequestBody Map<String, Object> payload) {
+  public ResponseEntity<Void> handleWebhook(
+      @RequestBody byte[] rawBody,
+      @RequestHeader(value = "X-Signature", required = false) String signature) {
 
     log.info("Webhook ePayco recibido");
 
-    String refId = (String) payload.get("x_ref_payco");
-    String status = (String) payload.get("x_respuesta");
+    if (gatewayProperties.getSecret() == null || gatewayProperties.getSecret().isBlank()) {
+      log.error("Gateway secret no configurado, rechazando webhook");
+      return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+    }
 
-    if (refId != null) {
-      log.info("Procesando pago refId={}, status={}", refId, status);
+    String payloadJson = new String(rawBody);
+    if (!WebhookSignatureValidator.isValid(payloadJson, signature, gatewayProperties.getSecret())) {
+      log.warn("Firma de webhook invalida, rechazando request");
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    }
 
-      confirmPaymentUseCase
-          .execute(refId)
-          .subscribe(
-              payment -> log.info("Pago actualizado: {}", payment),
-              error -> log.error("Error actualizando pago", error));
+    try {
+      JsonNode payload = objectMapper.readTree(rawBody);
+      String refId = payload.path("x_ref_payco").asText(null);
+      String status = payload.path("x_respuesta").asText(null);
+
+      if (refId != null) {
+        log.info("Procesando pago refId={}, status={}", refId, status);
+        confirmPaymentUseCase.execute(refId).block();
+      }
+    } catch (Exception e) {
+      log.error("Error procesando webhook ePayco", e);
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
     }
 
     return ResponseEntity.ok().build();

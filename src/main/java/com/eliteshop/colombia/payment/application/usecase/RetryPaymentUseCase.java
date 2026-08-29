@@ -43,7 +43,8 @@ public class RetryPaymentUseCase {
               return Mono.justOrEmpty(paymentRepository.findByOrderId(orderId))
                   .switchIfEmpty(
                       Mono.error(
-                          new IllegalStateException(
+                          new com.eliteshop.colombia.payment.domain.exception
+                              .PaymentNotFoundException(
                               "No existe pago asociado a la orden: " + orderId)))
                   .flatMap(
                       existingPayment -> {
@@ -94,7 +95,7 @@ public class RetryPaymentUseCase {
                             .onErrorResume(
                                 error -> {
                                   log.error(
-                                      "Error creando sesion de reintento: {}", error.getMessage());
+                                      "Error creando sesión de reintento: {}", error.getMessage());
                                   existingPayment.setStatus(PaymentStatus.ERROR);
                                   existingPayment.setUpdatedAt(LocalDateTime.now());
                                   paymentRepository.save(existingPayment);

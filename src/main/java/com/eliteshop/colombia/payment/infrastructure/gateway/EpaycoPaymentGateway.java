@@ -1,5 +1,6 @@
 package com.eliteshop.colombia.payment.infrastructure.gateway;
 
+import com.eliteshop.colombia.payment.domain.exception.PaymentGatewayException;
 import com.eliteshop.colombia.payment.domain.model.*;
 import com.eliteshop.colombia.payment.domain.model.paymentmethod.TokenizedCard;
 import com.eliteshop.colombia.payment.domain.port.PaymentGateway;
@@ -85,11 +86,32 @@ public class EpaycoPaymentGateway implements PaymentGateway {
                   .retrieve()
                   .bodyToMono(CreateSessionResponse.class)
                   .map(
-                      response ->
-                          CheckoutSession.builder()
-                              .sessionId(response.getData().getSessionId())
-                              .token(response.getData().getToken())
-                              .build());
+                      response -> {
+                        if (response.getData() == null) {
+                          log.error(
+                              "ePayco session create returned null data. success={}, body={}",
+                              response.isSuccess(),
+                              response);
+                          throw new PaymentGatewayException(
+                              "ePayco no retornó datos de sesión de pago");
+                        }
+                        String sessionId = response.getData().getSessionId();
+                        String sessionToken = response.getData().getToken();
+                        if (sessionId == null || sessionToken == null) {
+                          log.error(
+                              "ePayco session create returned null sessionId/token. "
+                                  + "sessionId={}, token={}, success={}",
+                              sessionId,
+                              sessionToken,
+                              response.isSuccess());
+                          throw new PaymentGatewayException(
+                              "ePayco no retornó sessionId o token válido");
+                        }
+                        return CheckoutSession.builder()
+                            .sessionId(sessionId)
+                            .token(sessionToken)
+                            .build();
+                      });
             });
   }
 
@@ -138,8 +160,8 @@ public class EpaycoPaymentGateway implements PaymentGateway {
                       response -> {
                         String last4 = response.getLast4();
                         if (last4 == null || last4.isBlank()) {
-                          throw new IllegalStateException(
-                              "No se pudo obtener el last4 de la tarjeta");
+                          throw new com.eliteshop.colombia.payment.domain.exception
+                              .PaymentGatewayException("No se pudo obtener el last4 de la tarjeta");
                         }
                         return new TokenizedCard(
                             response.getId(),
@@ -190,7 +212,8 @@ public class EpaycoPaymentGateway implements PaymentGateway {
                       response -> {
                         if (response.getData() == null
                             || response.getData().getCustomerId() == null) {
-                          throw new IllegalStateException("No se pudo crear el customer en ePayco");
+                          throw new com.eliteshop.colombia.payment.domain.exception
+                              .PaymentGatewayException("No se pudo crear el customer en ePayco");
                         }
                         return response.getData().getCustomerId();
                       });

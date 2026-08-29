@@ -30,7 +30,7 @@ public class CreateCheckoutSessionUseCase {
               if (existingPayment.getStatus() == PaymentStatus.PENDING
                   && existingPayment.getCreatedAt() != null
                   && existingPayment.getCreatedAt().isAfter(LocalDateTime.now().minusMinutes(30))) {
-                log.info("Reutilizando sesion existente para invoice: {}", request.getInvoice());
+                log.info("Reutilizando sesión existente para invoice: {}", request.getInvoice());
                 return createGatewaySession(request, existingPayment);
               }
               return createNewPayment(request);

@@ -34,7 +34,10 @@ public class SavePaymentMethodUseCase {
       Customer customer =
           customerRepository
               .findById(new CustomerId(customerId))
-              .orElseThrow(() -> new IllegalStateException("Customer no encontrado"));
+              .orElseThrow(
+                  () ->
+                      new com.eliteshop.colombia.customer.domain.exception
+                          .CustomerNotFoundException("Customer no encontrado"));
 
       return paymentGateway
           .tokenizeCard(cardNumber, cvc, expiryMonth, expiryYear)

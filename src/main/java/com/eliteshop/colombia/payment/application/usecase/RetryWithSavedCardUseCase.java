@@ -53,7 +53,8 @@ public class RetryWithSavedCardUseCase {
               return Mono.justOrEmpty(paymentMethodRepository.findById(paymentMethodId))
                   .switchIfEmpty(
                       Mono.error(
-                          new IllegalStateException(
+                          new com.eliteshop.colombia.payment.domain.exception
+                              .PaymentNotFoundException(
                               "Metodo de pago no encontrado: " + paymentMethodId)))
                   .flatMap(
                       method -> {
@@ -64,14 +65,16 @@ public class RetryWithSavedCardUseCase {
                                         order.getCustomerId().getValue()))
                                 .orElseThrow(
                                     () ->
-                                        new IllegalStateException(
+                                        new com.eliteshop.colombia.customer.domain.exception
+                                            .CustomerNotFoundException(
                                             "Cliente no encontrado: "
                                                 + order.getCustomerId().getValue()));
 
                         return Mono.justOrEmpty(paymentRepository.findByOrderId(orderId))
                             .switchIfEmpty(
                                 Mono.error(
-                                    new IllegalStateException(
+                                    new com.eliteshop.colombia.payment.domain.exception
+                                        .PaymentNotFoundException(
                                         "No existe pago asociado a la orden: " + orderId)))
                             .flatMap(
                                 existingPayment -> {
@@ -133,7 +136,8 @@ public class RetryWithSavedCardUseCase {
                                                               System.currentTimeMillis())),
                                                       order.getTrackingNumber(),
                                                       order.getShippingCarrier(),
-                                                      order.getShippingLabelUrl());
+                                                      order.getShippingLabelUrl(),
+                                                      null);
                                               orderUpdateUseCase.execute(updatedOrder);
                                               log.info("Orden {} actualizada a PAID", orderId);
                                             }
