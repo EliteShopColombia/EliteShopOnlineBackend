@@ -6,7 +6,6 @@ import com.eliteshop.colombia.order.domain.exception.OrderNotFoundException;
 import com.eliteshop.colombia.order.domain.model.Order;
 import com.eliteshop.colombia.order.domain.model.OrderId;
 import com.eliteshop.colombia.order.domain.model.OrderStatus;
-import com.eliteshop.colombia.order.domain.model.OrderUpdatedAt;
 import com.eliteshop.colombia.order.domain.repository.OrderRepository;
 import java.sql.Timestamp;
 import lombok.RequiredArgsConstructor;
@@ -38,22 +37,12 @@ public class CompleteOrderUseCase {
           "Only DELIVERED orders can be completed, current status: " + order.getStatus());
     }
 
-    Order completedOrder =
-        new Order(
-            order.getId(),
-            order.getCustomerId(),
-            OrderStatus.COMPLETED,
-            order.getTotalAmount(),
-            order.getShippingAddress(),
-            order.getShippingDepartment(),
-            order.getShippingCity(),
-            order.getCreatedAt(),
-            new OrderUpdatedAt(new Timestamp(System.currentTimeMillis())),
-            order.getTrackingNumber(),
-            order.getShippingCarrier(),
-            order.getShippingLabelUrl());
-
-    repository.update(completedOrder);
+    Timestamp updatedAt = new Timestamp(System.currentTimeMillis());
+    if (!repository.updateStatusIfCurrent(
+        orderId, OrderStatus.DELIVERED, OrderStatus.COMPLETED, updatedAt)) {
+      throw new InvalidOrderStatusTransitionException(
+          "The order status changed before it could be completed");
+    }
 
     eventPublisher.publishEvent(
         OrderStatusChangedEvent.of(

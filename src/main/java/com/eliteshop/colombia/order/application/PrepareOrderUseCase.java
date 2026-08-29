@@ -6,7 +6,6 @@ import com.eliteshop.colombia.order.domain.exception.OrderNotFoundException;
 import com.eliteshop.colombia.order.domain.model.Order;
 import com.eliteshop.colombia.order.domain.model.OrderId;
 import com.eliteshop.colombia.order.domain.model.OrderStatus;
-import com.eliteshop.colombia.order.domain.model.OrderUpdatedAt;
 import com.eliteshop.colombia.order.domain.repository.OrderRepository;
 import java.sql.Timestamp;
 import lombok.RequiredArgsConstructor;
@@ -38,22 +37,12 @@ public class PrepareOrderUseCase {
           "Only PAID orders can be prepared, current status: " + order.getStatus());
     }
 
-    Order preparedOrder =
-        new Order(
-            order.getId(),
-            order.getCustomerId(),
-            OrderStatus.IN_PREPARATION,
-            order.getTotalAmount(),
-            order.getShippingAddress(),
-            order.getShippingDepartment(),
-            order.getShippingCity(),
-            order.getCreatedAt(),
-            new OrderUpdatedAt(new Timestamp(System.currentTimeMillis())),
-            order.getTrackingNumber(),
-            order.getShippingCarrier(),
-            order.getShippingLabelUrl());
-
-    repository.update(preparedOrder);
+    Timestamp updatedAt = new Timestamp(System.currentTimeMillis());
+    if (!repository.updateStatusIfCurrent(
+        orderId, OrderStatus.PAID, OrderStatus.IN_PREPARATION, updatedAt)) {
+      throw new InvalidOrderStatusTransitionException(
+          "The order status changed before it could be prepared");
+    }
 
     eventPublisher.publishEvent(
         OrderStatusChangedEvent.of(

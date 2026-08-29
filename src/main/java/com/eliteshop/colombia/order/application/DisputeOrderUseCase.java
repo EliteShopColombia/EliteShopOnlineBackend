@@ -4,6 +4,7 @@ import com.eliteshop.colombia.order.domain.event.OrderStatusChangedEvent;
 import com.eliteshop.colombia.order.domain.exception.InvalidOrderStatusTransitionException;
 import com.eliteshop.colombia.order.domain.exception.OrderAccessDeniedException;
 import com.eliteshop.colombia.order.domain.exception.OrderNotFoundException;
+import com.eliteshop.colombia.order.domain.model.DisputeReason;
 import com.eliteshop.colombia.order.domain.model.Order;
 import com.eliteshop.colombia.order.domain.model.OrderId;
 import com.eliteshop.colombia.order.domain.model.OrderStatus;
@@ -30,8 +31,8 @@ public class DisputeOrderUseCase {
           OrderStatus.DELIVERED,
           OrderStatus.COMPLETED);
 
-  public void execute(OrderId orderId, UUID actorId) {
-    log.info("Abriendo disputa para orden {}", orderId);
+  public void execute(OrderId orderId, UUID actorId, DisputeReason reason) {
+    log.info("Abriendo disputa para orden {} con motivo {}", orderId, reason);
 
     Order order =
         repository
@@ -62,6 +63,8 @@ public class DisputeOrderUseCase {
           "The order status changed before the dispute was opened");
     }
 
+    repository.updateDisputeReason(orderId, reason);
+
     eventPublisher.publishEvent(
         OrderStatusChangedEvent.of(
             order.getId().getValue(),
@@ -69,6 +72,6 @@ public class DisputeOrderUseCase {
             order.getStatus().name(),
             OrderStatus.DISPUTE.name()));
 
-    log.info("Disputa abierta para orden {}", orderId);
+    log.info("Disputa abierta para orden {} con motivo {}", orderId, reason);
   }
 }

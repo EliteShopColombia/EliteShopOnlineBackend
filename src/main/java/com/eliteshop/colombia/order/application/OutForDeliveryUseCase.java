@@ -6,7 +6,6 @@ import com.eliteshop.colombia.order.domain.exception.OrderNotFoundException;
 import com.eliteshop.colombia.order.domain.model.Order;
 import com.eliteshop.colombia.order.domain.model.OrderId;
 import com.eliteshop.colombia.order.domain.model.OrderStatus;
-import com.eliteshop.colombia.order.domain.model.OrderUpdatedAt;
 import com.eliteshop.colombia.order.domain.repository.OrderRepository;
 import java.sql.Timestamp;
 import lombok.RequiredArgsConstructor;
@@ -39,22 +38,12 @@ public class OutForDeliveryUseCase {
           "Only SHIPPED orders can be out for delivery, current status: " + order.getStatus());
     }
 
-    Order outForDeliveryOrder =
-        new Order(
-            order.getId(),
-            order.getCustomerId(),
-            OrderStatus.OUT_FOR_DELIVERY,
-            order.getTotalAmount(),
-            order.getShippingAddress(),
-            order.getShippingDepartment(),
-            order.getShippingCity(),
-            order.getCreatedAt(),
-            new OrderUpdatedAt(new Timestamp(System.currentTimeMillis())),
-            order.getTrackingNumber(),
-            order.getShippingCarrier(),
-            order.getShippingLabelUrl());
-
-    repository.update(outForDeliveryOrder);
+    Timestamp updatedAt = new Timestamp(System.currentTimeMillis());
+    if (!repository.updateStatusIfCurrent(
+        orderId, OrderStatus.SHIPPED, OrderStatus.OUT_FOR_DELIVERY, updatedAt)) {
+      throw new InvalidOrderStatusTransitionException(
+          "The order status changed before it could be marked as out for delivery");
+    }
 
     eventPublisher.publishEvent(
         OrderStatusChangedEvent.of(

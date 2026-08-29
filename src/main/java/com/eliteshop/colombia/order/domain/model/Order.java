@@ -19,4 +19,5 @@ public class Order {
   private final String trackingNumber;
   private final String shippingCarrier;
   private final String shippingLabelUrl;
+  private final DisputeReason disputeReason;
 }

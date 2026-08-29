@@ -1,6 +1,5 @@
 package com.eliteshop.colombia.order.application;
 
-import com.eliteshop.colombia.order.domain.model.OrderId;
 import com.eliteshop.colombia.order.domain.model.OrderStatus;
 import com.eliteshop.colombia.order.domain.repository.OrderItemRepository;
 import com.eliteshop.colombia.order.domain.repository.OrderRepository;
@@ -29,10 +28,10 @@ public class OrderStatusCountsUseCase {
       counts.put(status.name(), 0);
     }
 
-    for (UUID orderId : orderIds) {
-      orderRepository
-          .findById(new OrderId(orderId))
-          .ifPresent(order -> counts.merge(order.getStatus().name(), 1, Integer::sum));
+    List<com.eliteshop.colombia.order.domain.model.Order> orders =
+        orderRepository.findAllByIds(orderIds);
+    for (com.eliteshop.colombia.order.domain.model.Order order : orders) {
+      counts.merge(order.getStatus().name(), 1, Integer::sum);
     }
 
     int total = orderIds.size();

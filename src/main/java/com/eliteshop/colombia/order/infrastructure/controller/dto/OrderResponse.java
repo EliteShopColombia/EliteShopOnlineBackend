@@ -24,4 +24,5 @@ public class OrderResponse {
   private String trackingNumber;
   private String shippingCarrier;
   private String shippingLabelUrl;
+  private String disputeReason;
 }

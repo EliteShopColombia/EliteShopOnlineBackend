@@ -51,4 +51,7 @@ public class OrderEntity {
 
   @Column(name = "shipping_label_url")
   private String shippingLabelUrl;
+
+  @Column(name = "dispute_reason")
+  private String disputeReason;
 }

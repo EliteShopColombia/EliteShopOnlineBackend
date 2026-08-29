@@ -1,5 +1,6 @@
 package com.eliteshop.colombia.order.infrastructure.mapper;
 
+import com.eliteshop.colombia.order.domain.model.DisputeReason;
 import com.eliteshop.colombia.order.domain.model.Order;
 import com.eliteshop.colombia.order.domain.model.OrderCreatedAt;
 import com.eliteshop.colombia.order.domain.model.OrderCustomerId;
@@ -47,7 +48,10 @@ public class OrderMapper {
         entity.getUpdatedAt() != null ? new OrderUpdatedAt(entity.getUpdatedAt()) : null,
         entity.getTrackingNumber(),
         entity.getShippingCarrier(),
-        entity.getShippingLabelUrl());
+        entity.getShippingLabelUrl(),
+        entity.getDisputeReason() != null
+            ? DisputeReason.valueOf(entity.getDisputeReason())
+            : null);
   }
 
   public OrderEntity toEntity(Order domain) {
@@ -69,6 +73,9 @@ public class OrderMapper {
     entity.setTrackingNumber(domain.getTrackingNumber());
     entity.setShippingCarrier(domain.getShippingCarrier());
     entity.setShippingLabelUrl(domain.getShippingLabelUrl());
+    if (domain.getDisputeReason() != null) {
+      entity.setDisputeReason(domain.getDisputeReason().name());
+    }
     return entity;
   }
 
@@ -76,15 +83,23 @@ public class OrderMapper {
     if (request == null) {
       return null;
     }
+    return toDomainFromRequest(request, request.getCustomerId());
+  }
+
+  public Order toDomainFromRequest(OrderRequest request, UUID customerId) {
+    if (request == null) {
+      return null;
+    }
     return new Order(
         new OrderId(UUID.randomUUID()),
-        new OrderCustomerId(request.getCustomerId()),
+        new OrderCustomerId(customerId),
         OrderStatus.PENDING_PAYMENT,
         new OrderTotalAmount(request.getTotalAmount()),
         new OrderShippingAddress(request.getShippingAddress()),
         new OrderShippingDepartment(request.getShippingDepartment()),
         new OrderShippingCity(request.getShippingCity()),
         new OrderCreatedAt(Timestamp.from(Instant.now())),
+        null,
         null,
         null,
         null,
@@ -110,6 +125,9 @@ public class OrderMapper {
     response.setTrackingNumber(domain.getTrackingNumber());
     response.setShippingCarrier(domain.getShippingCarrier());
     response.setShippingLabelUrl(domain.getShippingLabelUrl());
+    if (domain.getDisputeReason() != null) {
+      response.setDisputeReason(domain.getDisputeReason().name());
+    }
     return response;
   }
 

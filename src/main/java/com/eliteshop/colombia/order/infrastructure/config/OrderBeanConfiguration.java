@@ -24,6 +24,7 @@ import com.eliteshop.colombia.order.application.UpdateTrackingUseCase;
 import com.eliteshop.colombia.order.domain.repository.OrderItemRepository;
 import com.eliteshop.colombia.order.domain.repository.OrderRepository;
 import com.eliteshop.colombia.order.domain.repository.TrackingEventRepository;
+import com.eliteshop.colombia.product.domain.repository.ProductRepository;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -65,8 +66,12 @@ public class OrderBeanConfiguration {
 
   @Bean
   public CancelOrderUseCase cancelOrderUseCase(
-      OrderRepository repository, ApplicationEventPublisher eventPublisher) {
-    return new CancelOrderUseCase(repository, eventPublisher);
+      OrderRepository repository,
+      OrderItemRepository orderItemRepository,
+      ProductRepository productRepository,
+      ApplicationEventPublisher eventPublisher) {
+    return new CancelOrderUseCase(
+        repository, orderItemRepository, productRepository, eventPublisher);
   }
 
   @Bean
@@ -111,15 +116,18 @@ public class OrderBeanConfiguration {
   }
 
   @Bean
-  public FindOrdersBySellerUseCase findOrdersBySellerUseCase(
-      OrderRepository orderRepository, OrderItemRepository orderItemRepository) {
-    return new FindOrdersBySellerUseCase(orderRepository, orderItemRepository);
+  public FindOrdersBySellerUseCase findOrdersBySellerUseCase(OrderRepository orderRepository) {
+    return new FindOrdersBySellerUseCase(orderRepository);
   }
 
   @Bean
   public RefundOrderUseCase refundOrderUseCase(
-      OrderRepository repository, ApplicationEventPublisher eventPublisher) {
-    return new RefundOrderUseCase(repository, eventPublisher);
+      OrderRepository repository,
+      OrderItemRepository orderItemRepository,
+      ProductRepository productRepository,
+      ApplicationEventPublisher eventPublisher) {
+    return new RefundOrderUseCase(
+        repository, orderItemRepository, productRepository, eventPublisher);
   }
 
   @Bean

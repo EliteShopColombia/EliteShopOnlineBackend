@@ -41,7 +41,8 @@ public class UpdateTrackingUseCase {
             new OrderUpdatedAt(new Timestamp(System.currentTimeMillis())),
             trackingNumber,
             shippingCarrier,
-            shippingLabelUrl);
+            shippingLabelUrl,
+            null);
 
     repository.update(updatedOrder);
 

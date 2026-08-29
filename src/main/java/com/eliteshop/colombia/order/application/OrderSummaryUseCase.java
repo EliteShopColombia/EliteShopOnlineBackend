@@ -25,15 +25,7 @@ public class OrderSummaryUseCase {
 
     List<UUID> orderIds = orderItemRepository.findDistinctOrderIdsBySellerId(sellerId);
 
-    List<Order> orders =
-        orderIds.stream()
-            .map(
-                orderId ->
-                    orderRepository.findById(
-                        new com.eliteshop.colombia.order.domain.model.OrderId(orderId)))
-            .filter(java.util.Optional::isPresent)
-            .map(java.util.Optional::get)
-            .toList();
+    List<Order> orders = orderRepository.findAllByIds(orderIds);
 
     int totalOrders = orders.size();
     BigDecimal totalRevenue =

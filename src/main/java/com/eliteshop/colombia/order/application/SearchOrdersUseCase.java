@@ -1,7 +1,6 @@
 package com.eliteshop.colombia.order.application;
 
 import com.eliteshop.colombia.order.domain.model.Order;
-import com.eliteshop.colombia.order.domain.model.OrderId;
 import com.eliteshop.colombia.order.domain.model.OrderStatus;
 import com.eliteshop.colombia.order.domain.repository.OrderItemRepository;
 import com.eliteshop.colombia.order.domain.repository.OrderRepository;
@@ -30,12 +29,7 @@ public class SearchOrdersUseCase {
 
     List<UUID> orderIds = orderItemRepository.findDistinctOrderIdsBySellerId(sellerId);
 
-    List<Order> allOrders =
-        orderIds.stream()
-            .map(orderId -> orderRepository.findById(new OrderId(orderId)))
-            .filter(java.util.Optional::isPresent)
-            .map(java.util.Optional::get)
-            .collect(Collectors.toList());
+    List<Order> allOrders = orderRepository.findAllByIds(orderIds);
 
     if (status != null) {
       allOrders =
@@ -49,7 +43,7 @@ public class SearchOrdersUseCase {
         allOrders.stream().skip((long) page * size).limit(size).collect(Collectors.toList());
 
     log.info(
-        "Encontradas {} ordenes (página {}/{} de {})",
+        "Encontradas {} ordenes (pagina {}/{} de {})",
         pagedOrders.size(),
         page + 1,
         totalPages,

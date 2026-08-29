@@ -6,7 +6,6 @@ import com.eliteshop.colombia.order.domain.exception.OrderNotFoundException;
 import com.eliteshop.colombia.order.domain.model.Order;
 import com.eliteshop.colombia.order.domain.model.OrderId;
 import com.eliteshop.colombia.order.domain.model.OrderStatus;
-import com.eliteshop.colombia.order.domain.model.OrderUpdatedAt;
 import com.eliteshop.colombia.order.domain.repository.OrderRepository;
 import java.sql.Timestamp;
 import lombok.RequiredArgsConstructor;
@@ -38,22 +37,12 @@ public class ShipOrderUseCase {
           "Only IN_PREPARATION orders can be shipped, current status: " + order.getStatus());
     }
 
-    Order shippedOrder =
-        new Order(
-            order.getId(),
-            order.getCustomerId(),
-            OrderStatus.SHIPPED,
-            order.getTotalAmount(),
-            order.getShippingAddress(),
-            order.getShippingDepartment(),
-            order.getShippingCity(),
-            order.getCreatedAt(),
-            new OrderUpdatedAt(new Timestamp(System.currentTimeMillis())),
-            order.getTrackingNumber(),
-            order.getShippingCarrier(),
-            order.getShippingLabelUrl());
-
-    repository.update(shippedOrder);
+    Timestamp updatedAt = new Timestamp(System.currentTimeMillis());
+    if (!repository.updateStatusIfCurrent(
+        orderId, OrderStatus.IN_PREPARATION, OrderStatus.SHIPPED, updatedAt)) {
+      throw new InvalidOrderStatusTransitionException(
+          "The order status changed before it could be shipped");
+    }
 
     eventPublisher.publishEvent(
         OrderStatusChangedEvent.of(
