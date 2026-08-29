@@ -28,6 +28,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -44,13 +45,16 @@ public class ProductController {
   private final ProductMapper mapper;
   private final ProductMinIOAdapter minIOAdapter;
   private final ProductImageRepository productImageRepository;
+  private final com.eliteshop.colombia.shared.security.AuthorizationService authorizationService;
 
   @PostMapping("/products")
   public ResponseEntity<ProductResponse> save(
       @Valid @RequestPart("product") ProductRequest request,
       @RequestPart(value = "images", required = false) List<MultipartFile> images,
-      HttpServletRequest httpRequest) {
-    Product product = mapper.toDomainFromRequest(request);
+      HttpServletRequest httpRequest,
+      Authentication authentication) {
+    UUID sellerId = UUID.fromString((String) httpRequest.getAttribute("gateway.sellerId"));
+    Product product = mapper.toDomainFromRequest(request, sellerId);
     saveUseCase.execute(product);
 
     if (images != null && !images.isEmpty()) {
@@ -77,8 +81,13 @@ public class ProductController {
       @PathVariable UUID id,
       @Valid @RequestPart("product") ProductUpdateRequest request,
       @RequestPart(value = "images", required = false) List<MultipartFile> images,
-      HttpServletRequest httpRequest) {
+      HttpServletRequest httpRequest,
+      Authentication authentication) {
     Product existingProduct = findByIdUseCase.execute(new ProductId(id)).orElseThrow();
+    authorizationService.requireSeller(
+        authentication,
+        existingProduct.getSellerId().getValue(),
+        (String) httpRequest.getAttribute("gateway.sellerId"));
     Product product = mapper.toDomainFromUpdateRequest(request, existingProduct);
     updateUseCase.execute(product);
 
@@ -104,7 +113,13 @@ public class ProductController {
   }
 
   @DeleteMapping("/products/{id}")
-  public ResponseEntity<Void> delete(@PathVariable UUID id) {
+  public ResponseEntity<Void> delete(
+      @PathVariable UUID id, HttpServletRequest request, Authentication authentication) {
+    Product product = findByIdUseCase.execute(new ProductId(id)).orElseThrow();
+    authorizationService.requireSeller(
+        authentication,
+        product.getSellerId().getValue(),
+        (String) request.getAttribute("gateway.sellerId"));
     deleteUseCase.execute(new ProductId(id));
     return ResponseEntity.noContent().build();
   }
@@ -130,6 +145,10 @@ public class ProductController {
 
   @GetMapping("/products/images")
   public ResponseEntity<InputStreamResource> serveImage(@RequestParam("key") String objectKey) {
+    if (objectKey == null || objectKey.contains("..") || !objectKey.startsWith("products/")) {
+      return ResponseEntity.badRequest().build();
+    }
+
     try {
       InputStream imageStream = minIOAdapter.downloadImage(objectKey);
       return ResponseEntity.ok()
@@ -195,7 +214,8 @@ public class ProductController {
         productImages.add(image);
         order++;
       } catch (Exception e) {
-        throw new RuntimeException("Error subiendo imagen del producto", e);
+        throw new com.eliteshop.colombia.shared.exception.StorageException(
+            "Error subiendo imagen del producto", e);
       }
     }
 

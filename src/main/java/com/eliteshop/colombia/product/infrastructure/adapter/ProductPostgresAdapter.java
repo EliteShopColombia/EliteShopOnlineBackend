@@ -72,14 +72,18 @@ public class ProductPostgresAdapter implements ProductRepository {
 
   @Override
   public void reduceStock(ProductId id, int quantity) {
-    ProductEntity existingEntity = jpaRepository.findById(id.getValue()).orElseThrow();
-    int newStock = existingEntity.getStock() - quantity;
-    if (newStock < 0) {
-      throw new IllegalStateException(
-          "Stock insuficiente para el producto " + existingEntity.getName());
+    int updated = jpaRepository.reduceStock(id.getValue(), quantity);
+    if (updated == 0) {
+      String name =
+          jpaRepository.findById(id.getValue()).map(ProductEntity::getName).orElse("desconocido");
+      throw new com.eliteshop.colombia.product.domain.exception.StockInsufficientException(
+          "Stock insuficiente para el producto " + name);
     }
-    existingEntity.setStock(newStock);
-    jpaRepository.save(existingEntity);
+  }
+
+  @Override
+  public void restoreStock(ProductId id, int quantity) {
+    jpaRepository.restoreStock(id.getValue(), quantity);
   }
 
   private Product toDomainWithImages(ProductEntity entity) {

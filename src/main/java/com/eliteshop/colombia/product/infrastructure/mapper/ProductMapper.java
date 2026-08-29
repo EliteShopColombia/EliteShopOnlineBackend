@@ -42,10 +42,15 @@ public class ProductMapper {
 
   public Product toDomainFromRequest(ProductRequest request) {
     if (request == null) return null;
+    return toDomainFromRequest(request, request.getSellerId());
+  }
+
+  public Product toDomainFromRequest(ProductRequest request, java.util.UUID sellerId) {
+    if (request == null) return null;
 
     return new Product(
         ProductId.generate(),
-        new ProductSellerId(request.getSellerId()),
+        new ProductSellerId(sellerId),
         new ProductName(request.getName()),
         new ProductPrice(BigDecimal.valueOf(request.getPrice())),
         new ProductStock(request.getStock()),
