@@ -17,13 +17,16 @@ Backend API for **EliteShop Colombia**, an e-commerce platform built with Spring
 - [Configuration](#configuration)
 - [Development Guidelines](#development-guidelines)
 
+- [Technical Debt](#technical-debt)
+
 ---
+
 
 ## Executive Summary
 
 EliteShop Colombia is a Colombian e-commerce platform that connects sellers and customers. The backend provides REST APIs for managing customers, sellers, products, orders, payments, shopping carts, and product reviews. It is designed as a modular monolith with clear domain boundaries, enabling independent evolution of each business module.
 
-**Current Status:** Early development. The **Customer** and **Seller** modules have been fully implemented (domain, application, and infrastructure layers). The database schema defines 12 tables covering the full business domain, but the remaining modules (product, order, cart, payment) are not yet implemented in code.
+**Current Status:** All modules fully implemented (domain, application, and infrastructure layers). The backend provides 288 passing tests covering unit, integration, and contract testing. Security is enforced via JWT with role-based access control (ROLE_CUSTOMER, ROLE_SELLER) and ownership validation.
 
 ---
 
@@ -616,10 +619,12 @@ graph LR
 |---|---|---|
 | **Customer** | `customer`, `customer_info` | Implemented |
 | **Seller** | `seller`, `seller_contact`, `seller_bank_info` | Implemented |
-| **Product** | `product`, `product_review` | Schema only |
-| **Order** | `orders`, `order_item` | Schema only |
-| **Payment** | `payment_info` | Schema only |
-| **Cart** | `cart`, `cart_item` | Schema only |
+| **Product** | `product`, `product_image` | Implemented |
+| **Order** | `orders`, `order_item`, `tracking_event` | Implemented |
+| **Payment** | `payment_info` | Implemented |
+| **Cart** | `cart`, `cart_item` | Implemented |
+| **Review** | `product_review`, `product_review_image` | Implemented |
+| **Checkout** | (orchestrates Order + Payment + Cart) | Implemented |
 
 ---
 
@@ -972,7 +977,26 @@ All profiles import configuration from the Spring Cloud Config Server at `http:/
 
 ### Security
 
-Spring Security is configured in `SecurityConfig.java` with CSRF disabled and all requests permitted. This is intended for development only. **Production deployment must configure proper authentication and authorization.**
+JWT-based authentication with role-based access control. Security is configured in `SecurityConfig.java` with endpoint-level authorization rules. Tokens include `userId`, `email`, `role`, `sellerId` claims. The Gateway sets `gateway.userId` and `gateway.sellerId` as request attributes via `JwtAuthFilter`.
+
+### Error Contract
+
+All error responses follow the `ErrorResponse` DTO format:
+
+```json
+{
+  "timestamp": "2026-08-24T21:00:00Z",
+  "status": 404,
+  "error": "Producto no encontrado",
+  "code": "PRODUCT_NOT_FOUND"
+}
+```
+
+Validation errors include a `fieldErrors` map with per-field messages.
+
+### Async Configuration
+
+Async processing is configured via `AsyncConfiguration` with a `ThreadPoolTaskExecutor` (core=4, max=8, queue=50). Used for notification dispatch and seller verification processing.
 
 ---
 
@@ -1009,8 +1033,144 @@ Follow the existing Customer module pattern:
 - Each use case class handles exactly one business operation
 - Value objects wrap primitives to enforce type safety
 
+
+## Technical Debt
+
+> **Last reviewed:** 2026-08-26 | **Severity scale:** CRITICAL / HIGH / MEDIUM / LOW
+>
+> Auto-detected via code analysis. Each item includes file paths, module, and recommended fix.
+
+### Summary
+
+| Severity | Count | Key Areas |
+|---|---|---|
+| **CRITICAL** | 8 | Missing `@Transactional` on checkout, mutable domain models, N+1 queries, zero tests in 2 modules, no rate limiting |
+| **HIGH** | 16 | Infrastructure leakage in domain, no CORS, controllers with 20+ dependencies, no input sanitization, missing `@Valid` |
+| **MEDIUM** | 22 | No `equals`/`hashCode` on VOs, raw primitives in domain, missing DTO validation, duplicated code |
+| **LOW** | 12 | Inconsistent naming, missing Javadoc, test endpoint exposed |
+
+---
+
+### CRITICAL — Must Fix Before Production
+
+| # | Issue | Module | File(s) | Recommended Fix |
+|---|---|---|---|---|
+| C1 | **CheckoutUseCase has no `@Transactional`** — order, items, payment, stock, and cart deletion are not atomic. A failure mid-way leaves the database inconsistent. | Checkout | `CheckoutUseCase.java` | Add `@Transactional` to `execute()`. Separate async payment call from DB writes. |
+| C2 | **CheckoutUseCase has no compensating transactions** — if stock reduction fails after payment is charged, money is taken but inventory is not updated. No rollback or saga exists. | Checkout | `CheckoutUseCase.java` | Implement Saga pattern with compensating actions for each step. |
+| C3 | **Payment model is a mutable data bag** — uses `@Data @Builder @NoArgsConstructor` with raw `UUID`, `String`, `BigDecimal` fields. No value objects, no validation, no immutability. | Payment | `Payment.java` | Refactor to immutable aggregate with value objects (like Seller module). |
+| C4 | **ProductPostgresAdapter N+1 query** — every `findAll()` loads ALL products, then issues a separate query for images per product. 100 products = 101 queries. | Product | `ProductPostgresAdapter.java` | Use `@BatchSize` on image collection or `JOIN FETCH` in JPQL. |
+| C5 | **No rate limiting on auth endpoints** — `/login`, `/register`, `/refresh` are wide open. Enables brute-force attacks and account enumeration. | Auth | `SecurityConfig.java` | Add Resilience4j rate limiter (10 req/min on login, 5 req/min on register). |
+| C6 | **cart module has ZERO tests** — 26 source files including critical checkout flow components (`AddToCartUseCase`, `RemoveFromCartUseCase`, `CartController`). | Cart | `src/main/java/.../cart/` | Add unit tests for use cases, MockMvc tests for controller, `@DataJpaTest` for adapter. |
+| C7 | **review module has ZERO tests** — 30 source files including `ReviewSaveUseCase`, `ReviewDeleteUseCase`, `ReviewController`, MinIO adapter. | Review | `src/main/java/.../review/` | Same as above. |
+| C8 | **CSRF disabled globally + No CORS config** — CSRF is unconditionally disabled. No CORS configuration exists anywhere. If frontend is on a different origin, developers will add `*` wildcard. | Security | `SecurityConfig.java` | Document JWT-only (no cookies) assumption. Add explicit CORS with specific origins. |
+
+---
+
+### HIGH — Should Fix Soon
+
+| # | Issue | Module | File(s) | Recommended Fix |
+|---|---|---|---|---|
+| H1 | **OrderController God Object** — 22 injected dependencies (use cases, repos, mapper, auth). Contains business logic (`requireOrderAccess`), inline mapping, and a deprecated constructor for tests. | Order | `OrderController.java` | Decompose into `OrderCrudController`, `OrderStatusController`, `OrderTrackingController`. |
+| H2 | **CustomerController merge logic** — 60 lines of field-level patch/merge logic in the controller instead of a use case. | Customer | `CustomerController.java` | Extract to `CustomerUpdateUseCase`. |
+| H3 | **ProductController uses repository directly** — `ProductImageRepository` injected into controller. 58 lines of non-HTTP logic (MinIO upload, URL construction). | Product | `ProductController.java` | Inject only use cases. Extract image handling to `ProductImageUseCase`. |
+| H4 | **No `equals()`/`hashCode()` on any value object** — ~70 VOs across all modules. Two `CustomerId` instances wrapping the same UUID are NOT equal. | All | `*/domain/model/*.java` | Add `@Value` (Lombok) or manual `equals`/`hashCode` based on the wrapped value. |
+| H5 | **`@Setter` on 25 value objects destroys immutability** — customer (14 VOs), order (8 VOs), seller (1 VO) all generate mutable setters. | Customer, Order, Seller | `*Id.java`, `*Email.java`, etc. | Remove `@Setter`. Use `@Value` or `@Getter` only. |
+| H6 | **`java.sql.Timestamp` in domain layer** — 10 timestamp VOs use JDBC type instead of `java.time.Instant`. Domain should not depend on persistence framework. | Customer, Order, Seller | `*CreatedAt.java`, `*UpdatedAt.java` | Replace with `java.time.Instant`. Add `@Converter` in adapter layer. |
+| H7 | **Spring `@ResponseStatus` in domain exceptions** — 20+ exception classes use `org.springframework.web.bind.annotation`. Domain layer must have zero infrastructure dependencies. | All | `*/domain/exception/*.java` | Remove `@ResponseStatus`. Map exceptions to HTTP status in `GlobalExceptionHandler` only. |
+| H8 | **Raw `UUID`/`String` in repository port signatures** — `OrderRepository`, `CartRepository`, `PaymentRepository`, etc. accept raw types instead of value objects. | All | `*/domain/repository/*.java` | Use `CustomerId`, `OrderId`, `SellerId` value objects in port methods. |
+| H9 | **No validation in customer module VOs** — `CustomerEmail`, `CustomerPhoneNumber`, `CustomerPassword`, etc. accept any string with zero validation. Seller module has excellent validation; customer has none. | Customer | `CustomerEmail.java`, `CustomerPhoneNumber.java`, etc. | Add regex, length, and format validation matching Seller module pattern. |
+| H10 | **No password complexity validation** — Register endpoint accepts `aaaaaaaa` (8 chars, no complexity). | Auth | `RegisterRequest.java` | Add custom validator: 1 uppercase + 1 lowercase + 1 digit + min 8 chars. |
+| H11 | **No input sanitization** — user-provided text (`ProductRequest.name`, `ReviewRequest.content`, `OrderRequest.shippingAddress`, etc.) stored and returned without XSS sanitization. | All | `*/controller/dto/*.java` | Add server-side HTML sanitization or enforce frontend escaping. |
+| H12 | **Cart stock TOCTOU race condition** — stock check at cart-add time is a read-then-act with no locking. Between check and save, another request can reduce stock. | Cart | `AddToCartUseCase.java` | Partially mitigated by checkout's atomic `WHERE stock >= quantity`. Consider pessimistic locking for cart operations. |
+| H13 | **Hardcoded Config Server IP** — `100.123.31.18:8888` hardcoded in `application-dev.yml`, `application-prod.yml`, `application-local.yml`. Same IP for dev and prod. | Config | `application-*.yml` | Externalize via env var: `${CONFIG_SERVER_URL}`. |
+| H14 | **Missing `@Valid` on SellerController.update** — uses manual `validator.validate()` instead of `@Valid @RequestBody`. Inconsistent with all other controllers. | Seller | `SellerController.java` | Add `@Valid` to `@RequestBody`. |
+| H15 | **WebhookController uses `new ObjectMapper()`** — bypasses Spring-managed Jackson config. Same in `GitHubWebhookController`. | Payment, Shared | `WebhookController.java`, `GitHubWebhookController.java` | Inject Spring's `ObjectMapper` bean. |
+| H16 | **GlobalExceptionHandler leaks internal messages** — `IllegalStateException` and `IllegalArgumentException` handlers expose `ex.getMessage()` to clients. | Shared | `GlobalExceptionHandler.java` | Use generic messages: "Solicitud invalida". |
+
+---
+
+### MEDIUM — Should Plan for Fix
+
+| # | Issue | Module | File(s) | Recommended Fix |
+|---|---|---|---|---|
+| M1 | **4 inconsistent value object patterns** — some use `@Value`, some `@RequiredArgsConstructor @Getter`, some manual constructor, some with rich validation. | All | `*/domain/model/*.java` | Standardize on `@Value` for simple VOs, manual with validation for complex ones. |
+| M2 | **No common domain exception base class** — 20+ exceptions extend `RuntimeException` directly. No way to catch all domain exceptions generically. | All | `*/domain/exception/*.java` | Create `DomainException` base with subtypes: `NotFoundException`, `ConflictException`, `ValidationException`. |
+| M3 | **Raw String fields in Order aggregate** — `trackingNumber`, `shippingCarrier`, `shippingLabelUrl` bypass the value object pattern. | Order | `Order.java` | Create `OrderTrackingNumber`, `OrderShippingCarrier`, `OrderShippingLabelUrl` VOs. |
+| M4 | **No DTO validation on checkout/payment fields** — `CheckoutRequest.cvv`, `cardNumber`, `expiryMonth` have no `@Size`/`@Pattern` constraints. | Checkout, Payment | `CheckoutRequest.java`, `RetryPaymentRequest.java` | Add `@NotNull`, `@Size`, `@Pattern` annotations. |
+| M5 | **Missing `@Size` on OrderRequest strings** — `shippingAddress`, `shippingDepartment`, `shippingCity` accept unlimited length. | Order | `OrderRequest.java` | Add `@Size(max = 150)` etc. |
+| M6 | **ReviewRequest has customerId in request body** — field exists and is `@NotNull` but controller overrides it. Misleading API contract. | Review | `ReviewRequest.java` | Remove `customerId` from DTO. |
+| M7 | **No pagination on review list endpoint** — `GET /reviews/product/{productId}` returns all reviews. Popular products with thousands of reviews will cause memory issues. | Review | `ReviewController.java` | Add `Pageable` parameter. |
+| M8 | **No max page size enforcement** — paginated endpoints accept `size=999999`. DoS vector. | All | `OrderController.java`, `SellerController.java`, etc. | Add `@Max(100)` or server-side cap. |
+| M9 | **Cart unsafe ArrayList downcast** — `addItem()`, `removeItem()`, `clear()` cast `this.items` to `ArrayList`. Fragile if constructor changes List implementation. | Cart | `Cart.java` | Use `new ArrayList<>(items)` in constructor, or proper mutable access. |
+| M10 | **Cart use cases throw `IllegalStateException`/`IllegalArgumentException`** — instead of domain exceptions (`CartItemNotFoundException`, `InsufficientStockException`). | Cart | `AddToCartUseCase.java`, `UpdateCartItemUseCase.java` | Use domain exceptions. |
+| M11 | **OrderStatusChangedEvent uses raw Strings** — `previousStatus` and `newStatus` are `String` when `OrderStatus` enum exists. | Order | `OrderStatusChangedEvent.java` | Use `OrderStatus` enum. |
+| M12 | **Dev and prod profiles are identical** — both `application-dev.yml` and `application-prod.yml` have the same 5 lines. No environment separation. | Config | `application-dev.yml`, `application-prod.yml` | Add logging levels, actuator restrictions, pool tuning for prod. |
+| M13 | **No base `application.yml`** — `spring.application.name` duplicated across all profiles. | Config | `src/main/resources/` | Create `application.yml` with shared properties. |
+| M14 | **Migration 017 depends on uuid-ossp created in 021** — ordering violation. Fresh DB will fail on migration 017. | DB | `017-create-tracking-events.yaml`, `021-cleanup-and-extensions.yaml` | Move `CREATE EXTENSION` to migration 016 or earlier. |
+| M15 | **Migration 012 DROP TABLE destroys data** — `DROP TABLE IF EXISTS cart_item CASCADE; cart CASCADE; order_item CASCADE;` in production = data loss. | DB | `012-create-cart-orderitem-payment-method.yaml` | Use `liquibase precondition` to check data before destructive operations. |
+| M16 | **Missing `@Transactional` on 7 use cases** — `CancelOrderUseCase`, `RefundOrderUseCase`, `DisputeOrderUseCase`, `OrderSaveUseCase`, `ProductSaveUseCase`, `ReviewSaveUseCase`, cart use cases. | Order, Product, Review, Cart | Various `*UseCase.java` | Add `@Transactional` where read-then-write patterns exist. |
+| M17 | **Image upload hardcodes `image/jpeg` content type** — regardless of actual file type. No magic byte validation. | Product, Review | `ProductMinIOAdapter.java`, `ReviewMinIOAdapter.java` | Validate from `MultipartFile.getContentType()`. |
+| M18 | **No image file size limits** — MinIO upload accepts unlimited size (`stream(stream, -1, 10485760)`). | Product, Review | `ProductMinIOAdapter.java`, `ReviewMinIOAdapter.java` | Add explicit size check before upload. |
+| M19 | **Duplicated avatar validation logic** — identical code in `CustomerController`, `SellerController`, `SellerVerificationController`. | Customer, Seller | 3 controller files | Extract to `shared/infrastructure/util/FileValidator.java`. |
+| M20 | **OrderMapper calls repository directly** — `toResponseWithItems` queries `orderItemRepository` inside the mapper. Mappers should be pure functions. | Order | `OrderMapper.java` | Inject order items from the use case, not the mapper. |
+| M21 | **All mappers are hand-written** — ~939 lines of boilerplate across 7 mappers. | All | `*/infrastructure/mapper/*.java` | Adopt MapStruct for compile-time mapping generation. |
+| M22 | **@Async + @Transactional on no-op listener** — `OrderCreatedProductListener` has both annotations but only logs. | Product | `OrderCreatedProductListener.java` | Remove `@Transactional`. |
+
+---
+
+### LOW — Should Fix When Convenient
+
+| # | Issue | Module | File(s) | Recommended Fix |
+|---|---|---|---|---|
+| L1 | **Inconsistent exception naming** — `CustomerNotExistException` vs `SellerNotFoundException` vs `ProductNotFoundException`. | All | `*/domain/exception/*.java` | Standardize on `*NotFoundException`. |
+| L2 | **SellerVerificationRepository in wrong package** — placed inside `domain.model.verification` instead of `domain.repository`. | Seller | `SellerVerificationRepository.java` | Move to `seller.domain.repository`. |
+| L3 | **Inconsistent repository package naming** — payment uses `domain.port`, others use `domain.repository`. | Payment | `payment.domain.port` | Rename to `payment.domain.repository`. |
+| L4 | **BCrypt strength at default 10** — acceptable but 12 recommended for production e-commerce. | Auth | `SecurityConfig.java` | `new BCryptPasswordEncoder(12)`. |
+| L5 | **Test endpoint exposed in all environments** — `GET /api/v1/webhooks/test-slack` is permitAll. | Shared | `SlackTestController.java` | Restrict to `dev` profile only. |
+| L6 | **Missing Javadoc on all DTOs** — no `@Schema` (OpenAPI) or Javadoc annotations on 31 DTO files. | All | `*/dto/*.java` | Add `@Schema` annotations for Swagger UI. |
+| L7 | **Docker compose uses `expose` not `ports`** — backend unreachable from host. | Infra | `docker-compose.yml` | Change to `ports: ["8080:8080"]`. |
+| L8 | **Docker compose missing health checks and supporting services** — no PostgreSQL, MinIO, Config Server defined. | Infra | `docker-compose.yml` | Add full stack definition or document external dependencies. |
+| L9 | **Migration test profile orphaned** — `application-migration-test.yml` exists but no test uses `@ActiveProfiles("migration-test")`. | Test | `application-migration-test.yml` | Wire `LiquibaseMigrationTest` to use this profile. |
+| L10 | **GlobalExceptionHandlerTest only tests ErrorResponse POJO** — does not verify actual HTTP responses. | Test | `GlobalExceptionHandlerTest.java` | Add MockMvc test verifying exception → HTTP status mapping. |
+| L11 | **No `@EnableConfigurationProperties` for GatewayProperties** — uses `@Component` instead of standard pattern. | Payment | `GatewayProperties.java` | Use `@EnableConfigurationProperties` on a config class. |
+| L12 | **ErrorContract timestamp missing on validation errors** — builder path in `GlobalExceptionHandler` does not set timestamp. | Shared | `GlobalExceptionHandler.java` | Add `timestamp(Instant.now())` to all builder usages. |
+
+---
+
+### Positive Observations
+
+Despite the debt above, several areas are well-implemented:
+
+- **Order state machine** — complete `VALID_TRANSITIONS` map with optimistic locking via `updateStatusIfCurrent` WHERE clause.
+- **Webhook signature validation** — HMAC-SHA256 with constant-time comparison (`MessageDigest.isEqual`).
+- **Payment idempotency** — `ConfirmPaymentUseCase` skips already-APPROVED payments.
+- **Review purchase verification** — only verified buyers can leave reviews.
+- **Stock reduction** — atomic SQL `WHERE p.stock >= :quantity` prevents overselling at DB level.
+- **Password hashing** — BCrypt before storage, password never included in response DTOs.
+- **JWT secrets externalized** — `@ConfigurationProperties` with `@NotBlank`, not hardcoded in source.
+- **Ownership validation** — `AuthorizationService` with consistent cross-tenant access prevention.
+- **Concurrency tests** — `StockConcurrencyTest` and `DisputeOrderConcurrencyReproductionTest` with proper thread synchronization.
+- **Clean Architecture adherence** — domain layer has zero Spring/JPA imports in most modules (except noted exceptions).
+
+---
+
+### Recommended Priority Order
+
+1. **C1+C2** — Add `@Transactional` + compensating transactions to `CheckoutUseCase` (data integrity)
+2. **C5** — Add rate limiting to auth endpoints (security)
+3. **C4** — Fix N+1 in `ProductPostgresAdapter` (performance)
+4. **C6+C7** — Add tests for cart and review modules (reliability)
+5. **C3** — Refactor `Payment` to immutable domain model (consistency)
+6. **H1-H3** — Decompose controllers, extract business logic (maintainability)
+7. **H4+H5** — Add `equals`/`hashCode` to VOs, remove `@Setter` (correctness)
+8. **H6+H7** — Remove infrastructure leakage from domain (architecture)
+9. **H9-H11** — Add validation and sanitization (security)
+10. **M14+M15** — Fix migration ordering and destructive DROP (data safety)
+
+
 ---
 
 ## License
 
 See [LICENSE](LICENSE) for details.
+
