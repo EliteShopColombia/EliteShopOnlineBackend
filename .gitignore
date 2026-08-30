@@ -54,6 +54,7 @@ desktop.ini
 # ---------- Environment / Secrets ----------
 .env
 .env.*
+!.env.example
 *.env
 application-local.yml
 application-local.properties
