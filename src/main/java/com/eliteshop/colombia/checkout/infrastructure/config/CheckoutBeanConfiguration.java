@@ -11,6 +11,7 @@ import com.eliteshop.colombia.payment.domain.port.PaymentGateway;
 import com.eliteshop.colombia.payment.domain.port.PaymentRepository;
 import com.eliteshop.colombia.product.domain.repository.ProductRepository;
 import com.eliteshop.colombia.seller.domain.repository.SellerRepository;
+import com.eliteshop.colombia.shared.domain.LocationValidationService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,7 +31,8 @@ public class CheckoutBeanConfiguration {
       PaymentGateway paymentGateway,
       OrderUpdateUseCase orderUpdateUseCase,
       ApplicationEventPublisher eventPublisher,
-      SellerRepository sellerRepository) {
+      SellerRepository sellerRepository,
+      LocationValidationService locationValidationService) {
     return new CheckoutUseCase(
         cartRepository,
         productRepository,
@@ -42,6 +44,7 @@ public class CheckoutBeanConfiguration {
         paymentGateway,
         orderUpdateUseCase,
         eventPublisher,
-        sellerRepository);
+        sellerRepository,
+        locationValidationService);
   }
 }

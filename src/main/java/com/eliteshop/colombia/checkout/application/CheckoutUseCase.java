@@ -52,9 +52,14 @@ public class CheckoutUseCase {
   private final OrderUpdateUseCase orderUpdateUseCase;
   private final ApplicationEventPublisher eventPublisher;
   private final SellerRepository sellerRepository;
+  private final com.eliteshop.colombia.shared.domain.LocationValidationService
+      locationValidationService;
 
   public CheckoutResult execute(UUID customerId, CheckoutRequestFields request) {
     log.info("Iniciando checkout para cliente {}", customerId);
+
+    // 0. Validate shipping location
+    locationValidationService.validateLocation(request.shippingDepartment, request.shippingCity);
 
     // 1. Obtener carrito
     Cart cart =
