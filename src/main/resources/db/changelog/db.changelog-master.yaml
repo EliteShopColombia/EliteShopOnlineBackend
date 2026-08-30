@@ -39,3 +39,7 @@ databaseChangeLog:
       file: db/migrations/024-add-bogota-city-alias.yaml
   - include:
       file: db/migrations/025-add-customer-role-and-admin-seed.yaml
+  - include:
+      file: db/migrations/026-seed-admin-dev.yaml
+  - include:
+      file: db/migrations/027-fix-admin-dev-password.yaml

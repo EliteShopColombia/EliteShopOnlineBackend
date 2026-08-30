@@ -166,4 +166,117 @@ class AdminControllerTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content").isArray());
   }
+
+  @Test
+  @WithMockUser(roles = "ADMIN")
+  void registerAdmin_shouldCreateAdmin_whenValidRequest() throws Exception {
+    String email = "new-admin-" + UUID.randomUUID() + "@test.com";
+    mockMvc
+        .perform(
+            post("/api/v1/admin/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    "{"
+                        + "\"firstName\": \"New\","
+                        + "\"lastName\": \"Admin\","
+                        + "\"email\": \""
+                        + email
+                        + "\","
+                        + "\"phoneNumber\": \"3001112233\","
+                        + "\"password\": \"SecurePass123!\""
+                        + "}"))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.id").isNotEmpty())
+        .andExpect(jsonPath("$.email").isNotEmpty())
+        .andExpect(jsonPath("$.firstName").value("New"))
+        .andExpect(jsonPath("$.lastName").value("Admin"))
+        .andExpect(jsonPath("$.role").value("admin"));
+  }
+
+  @Test
+  @WithMockUser(roles = "ADMIN")
+  void registerAdmin_shouldReturn409_whenEmailExists() throws Exception {
+    String existingEmail = "existing-admin-" + UUID.randomUUID() + "@test.com";
+    String body =
+        "{"
+            + "\"firstName\": \"Existing\","
+            + "\"lastName\": \"Admin\","
+            + "\"email\": \""
+            + existingEmail
+            + "\","
+            + "\"phoneNumber\": \"3001112233\","
+            + "\"password\": \"SecurePass123!\""
+            + "}";
+
+    // Create admin first
+    mockMvc
+        .perform(
+            post("/api/v1/admin/register").contentType(MediaType.APPLICATION_JSON).content(body))
+        .andExpect(status().isCreated());
+
+    // Try to create again with same email
+    mockMvc
+        .perform(
+            post("/api/v1/admin/register").contentType(MediaType.APPLICATION_JSON).content(body))
+        .andExpect(status().isConflict());
+  }
+
+  @Test
+  @WithMockUser(roles = "ADMIN")
+  void registerAdmin_shouldReturn400_whenInvalidData() throws Exception {
+    mockMvc
+        .perform(
+            post("/api/v1/admin/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "firstName": "",
+                      "lastName": "",
+                      "email": "invalid-email",
+                      "phoneNumber": "",
+                      "password": "short"
+                    }
+                    """))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @WithMockUser(roles = "CUSTOMER")
+  void registerAdmin_shouldReturn403_forCustomer() throws Exception {
+    mockMvc
+        .perform(
+            post("/api/v1/admin/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "firstName": "Test",
+                      "lastName": "User",
+                      "email": "test@test.com",
+                      "phoneNumber": "3001234567",
+                      "password": "SecurePass123!"
+                    }
+                    """))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
+  void registerAdmin_shouldReturn403_whenNotAuthenticated() throws Exception {
+    mockMvc
+        .perform(
+            post("/api/v1/admin/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "firstName": "Test",
+                      "lastName": "User",
+                      "email": "test@test.com",
+                      "phoneNumber": "3001234567",
+                      "password": "SecurePass123!"
+                    }
+                    """))
+        .andExpect(status().isForbidden());
+  }
 }

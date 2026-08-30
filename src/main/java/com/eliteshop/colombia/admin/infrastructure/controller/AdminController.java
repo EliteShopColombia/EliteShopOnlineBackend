@@ -1,7 +1,12 @@
 package com.eliteshop.colombia.admin.infrastructure.controller;
 
+import com.eliteshop.colombia.admin.application.AdminRegisterUseCase;
 import com.eliteshop.colombia.admin.infrastructure.controller.dto.AdminDashboardResponse;
+import com.eliteshop.colombia.admin.infrastructure.controller.dto.AdminRegisterRequest;
+import com.eliteshop.colombia.admin.infrastructure.controller.dto.AdminRegisterResponse;
 import com.eliteshop.colombia.admin.infrastructure.controller.dto.SellerStatusRequest;
+import com.eliteshop.colombia.admin.infrastructure.mapper.AdminMapper;
+import com.eliteshop.colombia.customer.domain.model.Customer;
 import com.eliteshop.colombia.customer.infrastructure.persistence.CustomerJpaRepository;
 import com.eliteshop.colombia.order.infrastructure.persistence.OrderEntity;
 import com.eliteshop.colombia.order.infrastructure.persistence.OrderJpaRepository;
@@ -17,7 +22,9 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -29,6 +36,16 @@ public class AdminController {
   private final SellerJpaRepository sellerJpaRepository;
   private final OrderJpaRepository orderJpaRepository;
   private final ProductJpaRepository productJpaRepository;
+  private final AdminRegisterUseCase adminRegisterUseCase;
+  private final AdminMapper adminMapper;
+
+  @PostMapping("/register")
+  public ResponseEntity<AdminRegisterResponse> registerAdmin(
+      @Valid @RequestBody AdminRegisterRequest request) {
+    Customer customer = adminMapper.toDomainFromRequest(request);
+    Customer saved = adminRegisterUseCase.execute(customer);
+    return ResponseEntity.status(HttpStatus.CREATED).body(adminMapper.toResponse(saved));
+  }
 
   @GetMapping("/dashboard")
   public ResponseEntity<AdminDashboardResponse> getDashboard() {
@@ -55,28 +72,31 @@ public class AdminController {
     return ResponseEntity.ok(response);
   }
 
+  @Transactional(readOnly = true)
   @GetMapping("/customers")
   public ResponseEntity<PageResult<?>> getAllCustomers(
       @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "25") int size) {
     var pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-    var result = customerJpaRepository.findAll(pageable);
+    var result = customerJpaRepository.findAllWithInfo(pageable);
     return ResponseEntity.ok(
         PageResult.of(result.getContent(), page, size, result.getTotalElements()));
   }
 
+  @Transactional(readOnly = true)
   @GetMapping("/sellers")
   public ResponseEntity<PageResult<?>> getAllSellers(
       @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "25") int size) {
     var pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-    var result = sellerJpaRepository.findAll(pageable);
+    var result = sellerJpaRepository.findAllWithDetails(pageable);
     return ResponseEntity.ok(
         PageResult.of(result.getContent(), page, size, result.getTotalElements()));
   }
 
+  @Transactional(readOnly = true)
   @GetMapping("/sellers/{id}")
   public ResponseEntity<SellerEntity> getSellerById(@PathVariable UUID id) {
     return sellerJpaRepository
-        .findById(id)
+        .findByIdWithDetails(id)
         .map(ResponseEntity::ok)
         .orElse(ResponseEntity.notFound().build());
   }
@@ -95,6 +115,7 @@ public class AdminController {
     return ResponseEntity.noContent().build();
   }
 
+  @Transactional(readOnly = true)
   @GetMapping("/orders")
   public ResponseEntity<?> getAllOrders(
       @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "25") int size) {
