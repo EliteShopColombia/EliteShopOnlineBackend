@@ -26,7 +26,7 @@ Backend API for **EliteShop Colombia**, an e-commerce platform built with Spring
 
 EliteShop Colombia is a Colombian e-commerce platform that connects sellers and customers. The backend provides REST APIs for managing customers, sellers, products, orders, payments, shopping carts, and product reviews. It is designed as a modular monolith with clear domain boundaries, enabling independent evolution of each business module.
 
-**Current Status:** All modules fully implemented (domain, application, and infrastructure layers). The backend provides 288 passing tests covering unit, integration, and contract testing. Security is enforced via JWT with role-based access control (ROLE_CUSTOMER, ROLE_SELLER) and ownership validation.
+**Current Status:** All modules fully implemented (domain, application, and infrastructure layers). The backend provides 357 passing tests covering unit, integration, and contract testing. Security is enforced via JWT with role-based access control (ROLE_CUSTOMER, ROLE_SELLER, ROLE_ADMIN) and ownership validation.
 
 ---
 
@@ -615,16 +615,18 @@ graph LR
     style Cart fill:#fffde7,stroke:#f57f17
 ```
 
-| Module | Tables | Code Status |
-|---|---|---|
-| **Customer** | `customer`, `customer_info` | Implemented |
-| **Seller** | `seller`, `seller_contact`, `seller_bank_info` | Implemented |
-| **Product** | `product`, `product_image` | Implemented |
-| **Order** | `orders`, `order_item`, `tracking_event` | Implemented |
-| **Payment** | `payment_info` | Implemented |
-| **Cart** | `cart`, `cart_item` | Implemented |
-| **Review** | `product_review`, `product_review_image` | Implemented |
-| **Checkout** | (orchestrates Order + Payment + Cart) | Implemented |
+ | Module | Tables | Code Status |
+ |---|---|---|
+ | **Customer** | `customer`, `customer_info` | Implemented |
+ | **Seller** | `seller`, `seller_contact`, `seller_bank_info`, `seller_verification` | Implemented |
+ | **Product** | `product`, `product_image` | Implemented |
+ | **Order** | `orders`, `order_item`, `tracking_events` | Implemented |
+ | **Payment** | `payment_info`, `customer_payment_method` | Implemented |
+ | **Cart** | `cart`, `cart_item` | Implemented |
+ | **Review** | `product_review`, `review_image` | Implemented |
+ | **Checkout** | (orchestrates Order + Payment + Cart) | Implemented |
+ | **Admin** | (manages all modules) | Implemented |
+ | **Shared/Notification** | `slack_message_queue` | Implemented |
 
 ---
 
