@@ -15,21 +15,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_DB: eliteshop_test
-          POSTGRES_USER: eliteshop
-          POSTGRES_PASSWORD: testpassword
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U eliteshop"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -50,9 +35,6 @@ jobs:
       - name: Run tests
         run: ./mvnw test
         env:
-          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/eliteshop_test
-          SPRING_DATASOURCE_USERNAME: eliteshop
-          SPRING_DATASOURCE_PASSWORD: testpassword
           JWT_SECRET: ci-test-secret-key-for-testing-only-minimum-32-bytes
           MINIO_ENDPOINT: http://localhost:9000
           MINIO_ACCESS_KEY: test-access
