@@ -29,10 +29,14 @@ public class OrderManagementController {
   private final FindOrdersByCustomerIdUseCase findByCustomerIdUseCase;
   private final OrderMapper mapper;
   private final OrderAuthorizationHelper authHelper;
+  private final com.eliteshop.colombia.shared.domain.LocationValidationService
+      locationValidationService;
 
   @PostMapping
   public ResponseEntity<OrderResponse> save(
       @Valid @RequestBody OrderRequest request, Authentication authentication) {
+    locationValidationService.validateLocation(
+        request.getShippingDepartment(), request.getShippingCity());
     Order order =
         mapper.toDomainFromRequest(
             request, authHelper.authenticatedUserId(authentication, request.getCustomerId()));
@@ -46,6 +50,8 @@ public class OrderManagementController {
       @Valid @RequestBody OrderRequest request,
       Authentication authentication) {
     authHelper.requireCustomerOrder(id, authentication);
+    locationValidationService.validateLocation(
+        request.getShippingDepartment(), request.getShippingCity());
     Order order =
         mapper.toDomainFromRequest(
             request, authHelper.authenticatedUserId(authentication, request.getCustomerId()));
