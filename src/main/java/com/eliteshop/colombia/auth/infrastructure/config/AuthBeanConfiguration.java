@@ -5,6 +5,7 @@ import com.eliteshop.colombia.auth.application.RefreshUseCase;
 import com.eliteshop.colombia.auth.application.RegisterUseCase;
 import com.eliteshop.colombia.auth.infrastructure.filter.JwtAuthFilter;
 import com.eliteshop.colombia.customer.domain.repository.CustomerRepository;
+import com.eliteshop.colombia.shared.domain.LocationValidationService;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -26,8 +27,10 @@ public class AuthBeanConfiguration {
 
   @Bean
   public RegisterUseCase registerUseCase(
-      CustomerRepository repository, PasswordEncoder passwordEncoder) {
-    return new RegisterUseCase(repository, passwordEncoder);
+      CustomerRepository repository,
+      PasswordEncoder passwordEncoder,
+      LocationValidationService locationValidationService) {
+    return new RegisterUseCase(repository, passwordEncoder, locationValidationService);
   }
 
   @Bean
