@@ -39,6 +39,9 @@ public class CustomerEntity {
   @Column(name = "customer_profile_image")
   private String profileImage;
 
+  @Column(name = "customer_role", nullable = false)
+  private String role;
+
   @Column(name = "customer_created_at", nullable = false, updatable = false)
   private Timestamp createdAt;
 

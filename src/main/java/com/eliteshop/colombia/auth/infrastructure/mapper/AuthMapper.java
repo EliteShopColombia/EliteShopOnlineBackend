@@ -18,6 +18,7 @@ import com.eliteshop.colombia.customer.domain.model.CustomerLastName;
 import com.eliteshop.colombia.customer.domain.model.CustomerPassword;
 import com.eliteshop.colombia.customer.domain.model.CustomerPhoneNumber;
 import com.eliteshop.colombia.customer.domain.model.CustomerProfileImage;
+import com.eliteshop.colombia.customer.domain.model.CustomerRole;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.UUID;
@@ -49,6 +50,7 @@ public class AuthMapper {
         request.getProfileImage() != null
             ? new CustomerProfileImage(request.getProfileImage())
             : null,
+        new CustomerRole("customer"),
         new CustomerCreatedAt(Timestamp.from(Instant.now())),
         null,
         info);

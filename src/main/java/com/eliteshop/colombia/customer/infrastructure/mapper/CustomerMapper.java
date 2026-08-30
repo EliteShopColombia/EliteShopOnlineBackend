@@ -17,6 +17,7 @@ import com.eliteshop.colombia.customer.domain.model.CustomerLastName;
 import com.eliteshop.colombia.customer.domain.model.CustomerPassword;
 import com.eliteshop.colombia.customer.domain.model.CustomerPhoneNumber;
 import com.eliteshop.colombia.customer.domain.model.CustomerProfileImage;
+import com.eliteshop.colombia.customer.domain.model.CustomerRole;
 import com.eliteshop.colombia.customer.domain.model.CustomerUpdatedAt;
 import com.eliteshop.colombia.customer.infrastructure.controller.dto.CustomerResponse;
 import com.eliteshop.colombia.customer.infrastructure.persistence.CustomerEntity;
@@ -54,6 +55,7 @@ public class CustomerMapper {
         entity.getProfileImage() != null
             ? new CustomerProfileImage(entity.getProfileImage())
             : null,
+        new CustomerRole(entity.getRole() != null ? entity.getRole() : "customer"),
         new CustomerCreatedAt(entity.getCreatedAt()),
         entity.getUpdatedAt() != null ? new CustomerUpdatedAt(entity.getUpdatedAt()) : null,
         info);
@@ -73,6 +75,7 @@ public class CustomerMapper {
     if (domain.getProfileImage() != null) {
       entity.setProfileImage(domain.getProfileImage().getValue());
     }
+    entity.setRole(domain.getRole() != null ? domain.getRole().getValue() : "customer");
     entity.setCreatedAt(domain.getCreatedAt().getValue());
     if (domain.getUpdatedAt() != null) {
       entity.setUpdatedAt(domain.getUpdatedAt().getValue());
@@ -107,6 +110,7 @@ public class CustomerMapper {
     if (domain.getProfileImage() != null) {
       response.setProfileImage(domain.getProfileImage().getValue());
     }
+    response.setRole(domain.getRole() != null ? domain.getRole().getValue() : "customer");
     response.setCreatedAt(domain.getCreatedAt().getValue());
     if (domain.getUpdatedAt() != null) {
       response.setUpdatedAt(domain.getUpdatedAt().getValue());

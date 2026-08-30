@@ -128,6 +128,7 @@ class CustomerAvatarUseCaseTest {
         new CustomerPhoneNumber("3001234567"),
         new CustomerPassword("hashed"),
         profileImageKey != null ? new CustomerProfileImage(profileImageKey) : null,
+        new CustomerRole("customer"),
         new CustomerCreatedAt(Timestamp.from(Instant.now())),
         null,
         null);

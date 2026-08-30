@@ -12,6 +12,7 @@ import com.eliteshop.colombia.customer.domain.model.*;
 import com.eliteshop.colombia.customer.domain.model.CustomerCreatedAt;
 import com.eliteshop.colombia.customer.domain.model.CustomerPassword;
 import com.eliteshop.colombia.customer.domain.model.CustomerPhoneNumber;
+import com.eliteshop.colombia.customer.domain.model.CustomerRole;
 import com.eliteshop.colombia.customer.domain.repository.CustomerRepository;
 import com.eliteshop.colombia.order.domain.model.*;
 import com.eliteshop.colombia.order.domain.repository.OrderRepository;
@@ -228,6 +229,7 @@ class PaymentControllerTest {
         new CustomerPhoneNumber("3001234567"),
         new CustomerPassword("hashed"),
         null,
+        new CustomerRole("customer"),
         new CustomerCreatedAt(new java.sql.Timestamp(System.currentTimeMillis())),
         null,
         null);

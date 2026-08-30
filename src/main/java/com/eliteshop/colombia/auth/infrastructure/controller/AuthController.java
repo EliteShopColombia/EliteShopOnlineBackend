@@ -9,6 +9,7 @@ import com.eliteshop.colombia.auth.infrastructure.controller.dto.LoginRequest;
 import com.eliteshop.colombia.auth.infrastructure.controller.dto.RegisterRequest;
 import com.eliteshop.colombia.auth.infrastructure.mapper.AuthMapper;
 import com.eliteshop.colombia.customer.domain.model.Customer;
+import com.eliteshop.colombia.customer.domain.repository.CustomerRepository;
 import com.eliteshop.colombia.seller.domain.repository.SellerRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,7 @@ public class AuthController {
   private final JwtService jwtService;
   private final AuthMapper authMapper;
   private final SellerRepository sellerRepository;
+  private final CustomerRepository customerRepository;
 
   @PostMapping("/register")
   public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
@@ -82,6 +84,10 @@ public class AuthController {
   }
 
   private String resolveRole(String email) {
+    var customer = customerRepository.findByEmail(email);
+    if (customer.isPresent() && "admin".equals(customer.get().getRole().getValue())) {
+      return "admin";
+    }
     return sellerRepository.findByEmail(email).isPresent() ? "seller" : "customer";
   }
 }

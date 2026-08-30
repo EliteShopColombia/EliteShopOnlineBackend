@@ -266,6 +266,7 @@ class CheckoutUseCaseTest {
         new CustomerPhoneNumber("3001234567"),
         new CustomerPassword("hashed"),
         null,
+        new CustomerRole("customer"),
         new CustomerCreatedAt(new java.sql.Timestamp(System.currentTimeMillis())),
         null,
         null);

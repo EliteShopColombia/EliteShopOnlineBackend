@@ -40,6 +40,7 @@ class CustomerIntegrationTest {
             new CustomerPhoneNumber("3001234567"),
             new CustomerPassword("password"),
             null,
+            new CustomerRole("customer"),
             new CustomerCreatedAt(Timestamp.from(Instant.now())),
             null,
             null));

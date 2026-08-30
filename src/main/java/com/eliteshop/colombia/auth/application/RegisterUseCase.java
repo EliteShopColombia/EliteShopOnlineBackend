@@ -43,6 +43,7 @@ public class RegisterUseCase {
             customer.getPhoneNumber(),
             new CustomerPassword(passwordEncoder.encode(customer.getPassword().getValue())),
             customer.getProfileImage(),
+            customer.getRole(),
             customer.getCreatedAt(),
             customer.getUpdatedAt(),
             customer.getInfo());

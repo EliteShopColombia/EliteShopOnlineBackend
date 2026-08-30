@@ -127,6 +127,7 @@ public class CustomerController {
             request.getProfileImage() != null
                 ? new CustomerProfileImage(request.getProfileImage())
                 : existing.getProfileImage(),
+            existing.getRole(),
             existing.getCreatedAt(),
             existing.getUpdatedAt(),
             info);

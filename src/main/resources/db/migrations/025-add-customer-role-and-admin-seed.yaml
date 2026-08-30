@@ -1,0 +1,33 @@
+databaseChangeLog:
+  - changeSet:
+      id: 025-add-customer-role-column
+      author: eliteshop
+      changes:
+        - addColumn:
+            tableName: customer
+            columns:
+              - column:
+                  name: customer_role
+                  type: varchar(20)
+                  defaultValue: 'customer'
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 025-seed-admin-user
+      author: eliteshop
+      context: production
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO customer (customer_id, customer_first_name, customer_last_name, customer_email, customer_phone_number, customer_password, customer_role, customer_created_at)
+              VALUES (
+                'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+                'Admin',
+                'EliteShop',
+                'admin@eliteshop.com',
+                '3001234567',
+                '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
+                'admin',
+                CURRENT_TIMESTAMP
+              );

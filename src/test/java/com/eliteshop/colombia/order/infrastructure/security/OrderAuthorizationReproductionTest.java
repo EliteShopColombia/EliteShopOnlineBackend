@@ -12,6 +12,7 @@ import com.eliteshop.colombia.customer.domain.model.CustomerId;
 import com.eliteshop.colombia.customer.domain.model.CustomerLastName;
 import com.eliteshop.colombia.customer.domain.model.CustomerPassword;
 import com.eliteshop.colombia.customer.domain.model.CustomerPhoneNumber;
+import com.eliteshop.colombia.customer.domain.model.CustomerRole;
 import com.eliteshop.colombia.customer.domain.repository.CustomerRepository;
 import com.eliteshop.colombia.order.domain.model.Order;
 import com.eliteshop.colombia.order.domain.model.OrderCreatedAt;
@@ -124,6 +125,7 @@ class OrderAuthorizationReproductionTest {
             new CustomerPhoneNumber("3001234567"),
             new CustomerPassword("password"),
             null,
+            new CustomerRole("customer"),
             new CustomerCreatedAt(Timestamp.from(Instant.now())),
             null,
             null));

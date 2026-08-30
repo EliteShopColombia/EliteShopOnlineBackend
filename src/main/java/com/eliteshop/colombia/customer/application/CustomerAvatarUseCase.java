@@ -39,6 +39,7 @@ public class CustomerAvatarUseCase {
             customer.getPhoneNumber(),
             customer.getPassword(),
             new CustomerProfileImage(objectKey),
+            customer.getRole(),
             customer.getCreatedAt(),
             customer.getUpdatedAt(),
             customer.getInfo());
@@ -64,6 +65,7 @@ public class CustomerAvatarUseCase {
               customer.getPhoneNumber(),
               customer.getPassword(),
               null,
+              customer.getRole(),
               customer.getCreatedAt(),
               customer.getUpdatedAt(),
               customer.getInfo());

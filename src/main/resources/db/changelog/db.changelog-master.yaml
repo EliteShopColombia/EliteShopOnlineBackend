@@ -37,3 +37,5 @@ databaseChangeLog:
       file: db/migrations/023-fix-department-dimensions-and-email-unique.yaml
   - include:
       file: db/migrations/024-add-bogota-city-alias.yaml
+  - include:
+      file: db/migrations/025-add-customer-role-and-admin-seed.yaml
