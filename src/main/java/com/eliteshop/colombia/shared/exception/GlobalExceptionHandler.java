@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -317,7 +318,111 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(IllegalArgumentException.class)
   public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex) {
     log.warn("Argumento ilegal: {}", ex.getMessage());
-    return badRequest(ex.getMessage(), "ILLEGAL_ARGUMENT");
+    return badRequest("Argumento invalido", "ILLEGAL_ARGUMENT");
+  }
+
+  @ExceptionHandler(InvalidLocationException.class)
+  public ResponseEntity<ErrorResponse> handleInvalidLocation(InvalidLocationException ex) {
+    log.warn("Ubicacion invalida: {}", ex.getMessage());
+    return badRequest("Departamento o ciudad no valido", "INVALID_LOCATION");
+  }
+
+  @ExceptionHandler(
+      com.eliteshop.colombia.seller.domain.exception.SellerInvalidTradeDepartmentException.class)
+  public ResponseEntity<ErrorResponse> handleSellerInvalidTradeDepartment(
+      com.eliteshop.colombia.seller.domain.exception.SellerInvalidTradeDepartmentException ex) {
+    log.warn("Departamento de comercio invalido: {}", ex.getMessage());
+    return badRequest("Departamento de comercio no valido", "SELLER_INVALID_TRADE_DEPARTMENT");
+  }
+
+  @ExceptionHandler(
+      com.eliteshop.colombia.seller.domain.exception.SellerInvalidTradeCityException.class)
+  public ResponseEntity<ErrorResponse> handleSellerInvalidTradeCity(
+      com.eliteshop.colombia.seller.domain.exception.SellerInvalidTradeCityException ex) {
+    log.warn("Ciudad de comercio invalida: {}", ex.getMessage());
+    return badRequest("Ciudad de comercio no valida", "SELLER_INVALID_TRADE_CITY");
+  }
+
+  @ExceptionHandler(
+      com.eliteshop.colombia.seller.domain.exception.SellerInvalidTradeAddressException.class)
+  public ResponseEntity<ErrorResponse> handleSellerInvalidTradeAddress(
+      com.eliteshop.colombia.seller.domain.exception.SellerInvalidTradeAddressException ex) {
+    log.warn("Direccion de comercio invalida: {}", ex.getMessage());
+    return badRequest("Direccion de comercio no valida", "SELLER_INVALID_TRADE_ADDRESS");
+  }
+
+  @ExceptionHandler(
+      com.eliteshop.colombia.seller.domain.exception.SellerInvalidTradeNameException.class)
+  public ResponseEntity<ErrorResponse> handleSellerInvalidTradeName(
+      com.eliteshop.colombia.seller.domain.exception.SellerInvalidTradeNameException ex) {
+    log.warn("Nombre de comercio invalido: {}", ex.getMessage());
+    return badRequest("Nombre de comercio no valido", "SELLER_INVALID_TRADE_NAME");
+  }
+
+  @ExceptionHandler(
+      com.eliteshop.colombia.seller.domain.exception.SellerInvalidFullnameException.class)
+  public ResponseEntity<ErrorResponse> handleSellerInvalidFullname(
+      com.eliteshop.colombia.seller.domain.exception.SellerInvalidFullnameException ex) {
+    log.warn("Nombre completo invalido: {}", ex.getMessage());
+    return badRequest("Nombre completo no valido", "SELLER_INVALID_FULLNAME");
+  }
+
+  @ExceptionHandler(
+      com.eliteshop.colombia.seller.domain.exception.SellerInvalidEmailException.class)
+  public ResponseEntity<ErrorResponse> handleSellerInvalidEmail(
+      com.eliteshop.colombia.seller.domain.exception.SellerInvalidEmailException ex) {
+    log.warn("Email de vendedor invalido: {}", ex.getMessage());
+    return badRequest("Email de vendedor no valido", "SELLER_INVALID_EMAIL");
+  }
+
+  @ExceptionHandler(
+      com.eliteshop.colombia.seller.domain.exception.SellerInvalidPhoneNumberException.class)
+  public ResponseEntity<ErrorResponse> handleSellerInvalidPhoneNumber(
+      com.eliteshop.colombia.seller.domain.exception.SellerInvalidPhoneNumberException ex) {
+    log.warn("Telefono de vendedor invalido: {}", ex.getMessage());
+    return badRequest("Telefono de vendedor no valido", "SELLER_INVALID_PHONE_NUMBER");
+  }
+
+  @ExceptionHandler(
+      com.eliteshop.colombia.seller.domain.exception.SellerInvalidDniNumberException.class)
+  public ResponseEntity<ErrorResponse> handleSellerInvalidDniNumber(
+      com.eliteshop.colombia.seller.domain.exception.SellerInvalidDniNumberException ex) {
+    log.warn("DNI de vendedor invalido: {}", ex.getMessage());
+    return badRequest("Numero de documento no valido", "SELLER_INVALID_DNI_NUMBER");
+  }
+
+  @ExceptionHandler(
+      com.eliteshop.colombia.seller.domain.exception.SellerInvalidBankNameException.class)
+  public ResponseEntity<ErrorResponse> handleSellerInvalidBankName(
+      com.eliteshop.colombia.seller.domain.exception.SellerInvalidBankNameException ex) {
+    log.warn("Nombre de banco invalido: {}", ex.getMessage());
+    return badRequest("Nombre de banco no valido", "SELLER_INVALID_BANK_NAME");
+  }
+
+  @ExceptionHandler(
+      com.eliteshop.colombia.seller.domain.exception.SellerInvalidNumberAccountException.class)
+  public ResponseEntity<ErrorResponse> handleSellerInvalidNumberAccount(
+      com.eliteshop.colombia.seller.domain.exception.SellerInvalidNumberAccountException ex) {
+    log.warn("Numero de cuenta invalido: {}", ex.getMessage());
+    return badRequest("Numero de cuenta no valido", "SELLER_INVALID_NUMBER_ACCOUNT");
+  }
+
+  @ExceptionHandler(HttpMessageNotReadableException.class)
+  public ResponseEntity<ErrorResponse> handleHttpMessageNotReadable(
+      HttpMessageNotReadableException ex) {
+    log.warn("Cuerpo de solicitud invalido: {}", ex.getMessage());
+    String message = "El cuerpo de la solicitud es invalido o tiene campos con formato incorrecto";
+    if (ex.getCause() != null && ex.getCause().getMessage() != null) {
+      String cause = ex.getCause().getMessage();
+      if (cause.contains("UUID")) {
+        message = "El valor de un campo UUID tiene formato invalido";
+      } else if (cause.contains("enum")) {
+        message = "El valor de un campo enumeracion no es valido";
+      } else if (cause.contains("Instant") || cause.contains("LocalDate")) {
+        message = "El valor de un campo de fecha tiene formato invalido";
+      }
+    }
+    return badRequest(message, "INVALID_REQUEST_BODY");
   }
 
   @ExceptionHandler(Exception.class)
