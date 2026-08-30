@@ -11,6 +11,8 @@ import com.eliteshop.colombia.customer.infrastructure.controller.dto.UpdateCusto
 import com.eliteshop.colombia.customer.infrastructure.mapper.CustomerMapper;
 import jakarta.validation.Valid;
 import java.io.InputStream;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -35,6 +37,8 @@ public class CustomerController {
   private final CustomerAvatarUseCase avatarUseCase;
   private final CustomerMapper mapper;
   private final com.eliteshop.colombia.shared.security.AuthorizationService authorizationService;
+  private final com.eliteshop.colombia.shared.domain.LocationValidationService
+      locationValidationService;
 
   private static final Set<String> ALLOWED_AVATAR_TYPES = Set.of("image/jpeg", "image/png");
   private static final long MAX_AVATAR_SIZE = 5 * 1024 * 1024;
@@ -46,6 +50,21 @@ public class CustomerController {
       Authentication authentication) {
     authorizationService.requireCustomer(authentication, id);
     Customer existing = findByIdUseCase.execute(new CustomerId(id)).orElseThrow();
+
+    // Validate location if department or city is being updated
+    if (request.getDepartment() != null || request.getCity() != null) {
+      String department =
+          request.getDepartment() != null
+              ? request.getDepartment()
+              : (existing.getInfo() != null ? existing.getInfo().getDepartment().getValue() : null);
+      String city =
+          request.getCity() != null
+              ? request.getCity()
+              : (existing.getInfo() != null ? existing.getInfo().getCity().getValue() : null);
+      if (department != null && city != null) {
+        locationValidationService.validateLocation(department, city);
+      }
+    }
 
     CustomerInfo info = existing.getInfo();
     if (existing.getInfo() != null
@@ -73,6 +92,22 @@ public class CustomerController {
                   : existing.getInfo().getCity(),
               existing.getInfo().getDniCreatedAt(),
               existing.getInfo().getDniUpdatedAt());
+    } else if (existing.getInfo() == null
+        && request.getDniType() != null
+        && request.getDniNumber() != null
+        && request.getAddress() != null
+        && request.getDepartment() != null
+        && request.getCity() != null) {
+      // Create new info if customer had no info and request provides all required fields
+      info =
+          new CustomerInfo(
+              new CustomerDniType(request.getDniType()),
+              new CustomerDniNumber(request.getDniNumber()),
+              new CustomerAddress(request.getAddress()),
+              new CustomerDepartment(request.getDepartment()),
+              new CustomerCity(request.getCity()),
+              new CustomerDniCreatedAt(Timestamp.from(Instant.now())),
+              null);
     }
 
     Customer customer =

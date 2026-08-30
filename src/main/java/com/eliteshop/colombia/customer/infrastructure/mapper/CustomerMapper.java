@@ -18,14 +18,9 @@ import com.eliteshop.colombia.customer.domain.model.CustomerPassword;
 import com.eliteshop.colombia.customer.domain.model.CustomerPhoneNumber;
 import com.eliteshop.colombia.customer.domain.model.CustomerProfileImage;
 import com.eliteshop.colombia.customer.domain.model.CustomerUpdatedAt;
-import com.eliteshop.colombia.customer.infrastructure.controller.dto.CustomerRequest;
 import com.eliteshop.colombia.customer.infrastructure.controller.dto.CustomerResponse;
-import com.eliteshop.colombia.customer.infrastructure.controller.dto.UpdateCustomerRequest;
 import com.eliteshop.colombia.customer.infrastructure.persistence.CustomerEntity;
 import com.eliteshop.colombia.customer.infrastructure.persistence.CustomerInfoEntity;
-import java.sql.Timestamp;
-import java.time.Instant;
-import java.util.UUID;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -97,68 +92,6 @@ public class CustomerMapper {
       entity.setInfo(infoEntity);
     }
     return entity;
-  }
-
-  public Customer toDomainFromRequest(CustomerRequest request) {
-    if (request == null) {
-      return null;
-    }
-    CustomerInfo info = null;
-    if (request.getDniType() != null) {
-      info =
-          new CustomerInfo(
-              new CustomerDniType(request.getDniType()),
-              new CustomerDniNumber(request.getDniNumber()),
-              new CustomerAddress(request.getAddress()),
-              new CustomerDepartment(request.getDepartment()),
-              new CustomerCity(request.getCity()),
-              new CustomerDniCreatedAt(Timestamp.from(Instant.now())),
-              null);
-    }
-    return new Customer(
-        new CustomerId(UUID.randomUUID()),
-        new CustomerFirstName(request.getFirstName()),
-        new CustomerLastName(request.getLastName()),
-        new CustomerEmail(request.getEmail()),
-        new CustomerPhoneNumber(request.getPhoneNumber()),
-        new CustomerPassword(request.getPassword()),
-        request.getProfileImage() != null
-            ? new CustomerProfileImage(request.getProfileImage())
-            : null,
-        new CustomerCreatedAt(Timestamp.from(Instant.now())),
-        null,
-        info);
-  }
-
-  public Customer toDomainFromUpdateRequest(UUID id, UpdateCustomerRequest request) {
-    if (request == null) {
-      return null;
-    }
-    CustomerInfo info = null;
-    if (request.getDniType() != null) {
-      info =
-          new CustomerInfo(
-              new CustomerDniType(request.getDniType()),
-              new CustomerDniNumber(request.getDniNumber()),
-              new CustomerAddress(request.getAddress()),
-              new CustomerDepartment(request.getDepartment()),
-              new CustomerCity(request.getCity()),
-              new CustomerDniCreatedAt(Timestamp.from(Instant.now())),
-              null);
-    }
-    return new Customer(
-        new CustomerId(id),
-        new CustomerFirstName(request.getFirstName()),
-        new CustomerLastName(request.getLastName()),
-        null,
-        new CustomerPhoneNumber(request.getPhoneNumber()),
-        null,
-        request.getProfileImage() != null
-            ? new CustomerProfileImage(request.getProfileImage())
-            : null,
-        null,
-        null,
-        info);
   }
 
   public CustomerResponse toResponse(Customer domain) {
