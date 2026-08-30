@@ -6,7 +6,7 @@ import lombok.Getter;
 
 @Getter
 public class SellerTradeDepartment {
-  private static final int MAX_LENGTH = 100;
+  private static final int MAX_LENGTH = 60;
 
   private final String value;
 
@@ -18,7 +18,9 @@ public class SellerTradeDepartment {
     }
     if (trimmed.length() > MAX_LENGTH) {
       throw new SellerInvalidTradeDepartmentException(
-          "El departamento no puede exceder " + MAX_LENGTH + " caracteres");
+          "El departamento no puede exceder "
+              + MAX_LENGTH
+              + " caracteres (ej: Antioquia, Valle del Cauca)");
     }
     this.value = trimmed;
   }

@@ -40,6 +40,7 @@ public class SellerRequest {
   private String tradeAddress;
 
   @NotBlank(message = "El departamento es obligatorio")
+  @Size(min = 2, max = 60, message = "El departamento debe tener entre 2 y 60 caracteres")
   private String tradeDepartment;
 
   @NotBlank(message = "La ciudad es obligatoria")

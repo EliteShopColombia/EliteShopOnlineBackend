@@ -4,6 +4,7 @@ import com.eliteshop.colombia.seller.domain.event.SellerCreatedEvent;
 import com.eliteshop.colombia.seller.domain.exception.SellerAlreadyExistsException;
 import com.eliteshop.colombia.seller.domain.model.Seller;
 import com.eliteshop.colombia.seller.domain.repository.SellerRepository;
+import com.eliteshop.colombia.shared.domain.LocationValidationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -15,10 +16,19 @@ public class SellerSaveUseCase {
 
   private final SellerRepository repository;
   private final ApplicationEventPublisher eventPublisher;
+  private final LocationValidationService locationValidationService;
 
   @Transactional
   public void execute(Seller seller) {
     log.info("Guardando vendedor con dni={}", seller.getDniNumber());
+
+    // Validate location before persisting
+    if (seller.getContact() != null) {
+      String department = seller.getContact().getTradeDepartment().getValue();
+      String city = seller.getContact().getTradeCity().getValue();
+      locationValidationService.validateLocation(department, city);
+    }
+
     repository
         .findByDniNumber(seller.getDniNumber())
         .ifPresent(

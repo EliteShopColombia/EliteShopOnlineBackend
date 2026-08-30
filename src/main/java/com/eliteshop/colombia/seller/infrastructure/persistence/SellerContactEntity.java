@@ -35,7 +35,7 @@ public class SellerContactEntity {
   @Column(name = "seller_trade_address", nullable = false, length = 150)
   private String tradeAddress;
 
-  @Column(name = "seller_trade_department", nullable = false, length = 50)
+  @Column(name = "seller_trade_department", nullable = false, length = 60)
   private String tradeDepartment;
 
   @Column(name = "seller_trade_city", nullable = false, length = 60)

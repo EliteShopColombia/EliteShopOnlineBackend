@@ -4,6 +4,7 @@ import com.eliteshop.colombia.seller.application.SellerAvatarUseCase;
 import com.eliteshop.colombia.seller.application.usecase.*;
 import com.eliteshop.colombia.seller.domain.repository.SellerRepository;
 import com.eliteshop.colombia.seller.infrastructure.adapter.SellerMinIOAdapter;
+import com.eliteshop.colombia.shared.domain.LocationValidationService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -45,8 +46,10 @@ public class SellerBeanConfiguration {
 
   @Bean
   public SellerSaveUseCase sellerSaveUseCase(
-      SellerRepository sellerRepository, ApplicationEventPublisher eventPublisher) {
-    return new SellerSaveUseCase(sellerRepository, eventPublisher);
+      SellerRepository sellerRepository,
+      ApplicationEventPublisher eventPublisher,
+      LocationValidationService locationValidationService) {
+    return new SellerSaveUseCase(sellerRepository, eventPublisher, locationValidationService);
   }
 
   @Bean
