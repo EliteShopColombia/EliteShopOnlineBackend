@@ -41,7 +41,8 @@ public class SecurityConfig {
                         "/api/v1/auth/login",
                         "/health",
                         "/webhooks/epayco/**",
-                        "/api/v1/webhooks/**")
+                        "/api/v1/webhooks/**",
+                        "/api/v1/locations/**")
                     .permitAll()
                     .requestMatchers(HttpMethod.POST, "/api/v1/sellers")
                     .permitAll()
