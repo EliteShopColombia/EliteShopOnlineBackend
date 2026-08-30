@@ -35,7 +35,6 @@ jobs:
       - name: Run tests
         run: ./mvnw test
         env:
-          JWT_SECRET: ci-test-secret-key-for-testing-only-minimum-32-bytes
           MINIO_ENDPOINT: http://localhost:9000
           MINIO_ACCESS_KEY: test-access
           MINIO_SECRET_KEY: test-secret
