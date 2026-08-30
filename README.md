@@ -1172,6 +1172,66 @@ Despite the debt above, several areas are well-implemented:
 
 ---
 
+## Deployment
+
+### Prerequisites
+
+- Java 21+
+- PostgreSQL 15+
+- MinIO instance for object storage
+- Config Server (optional, disabled by default in profiles)
+- Environment variables configured (see `.env.example`)
+
+### Environment Variables
+
+Copy `.env.example` to `.env` and fill in the values. All sensitive configuration is externalized:
+
+```bash
+cp .env.example .env
+```
+
+Key variables:
+
+| Variable | Description | Example |
+|---|---|---|
+| `SPRING_DATASOURCE_URL` | PostgreSQL JDBC URL | `jdbc:postgresql://localhost:5432/colombia` |
+| `JWT_SECRET` | HMAC-SHA256 secret (min 32 bytes) | `[your-secret]` |
+| `MINIO_ENDPOINT` | MinIO server URL | `http://localhost:9000` |
+| `MINIO_ACCESS_KEY` | MinIO access key | `[your-key]` |
+| `MINIO_SECRET_KEY` | MinIO secret key | `[your-secret]` |
+
+### Running Locally
+
+```bash
+# Start PostgreSQL and MinIO (e.g., via Docker Compose)
+docker compose up -d
+
+# Run the application
+./mvnw spring-boot:run
+
+# Or with a specific profile
+./mvnw spring-boot:run -Dspring-boot.run.profiles=local
+```
+
+### Production Deployment
+
+```bash
+# Build the JAR
+./mvnw clean package -DskipTests
+
+# Run with production profile
+java -jar target/colombia-*.jar --spring.profiles.active=prod
+```
+
+### Health Checks
+
+- **Actuator Health**: `GET /actuator/health`
+- **Actuator Info**: `GET /actuator/info`
+- **Swagger UI**: `GET /swagger-ui/index.html`
+- **OpenAPI Spec**: `GET /v3/api-docs`
+
+---
+
 ## License
 
 See [LICENSE](LICENSE) for details.
