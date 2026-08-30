@@ -79,7 +79,8 @@ class OrderOwnershipTest {
             findByIdUseCase,
             findByCustomerIdUseCase,
             mapper,
-            authHelper);
+            authHelper,
+            mock(com.eliteshop.colombia.shared.domain.LocationValidationService.class));
 
     OrderStatusController statusController =
         new OrderStatusController(

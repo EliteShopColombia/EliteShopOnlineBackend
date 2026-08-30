@@ -15,12 +15,21 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@Sql(
+    executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS,
+    statements = {
+      "MERGE INTO department (id, name) KEY (id) VALUES (11, 'Bogotá D.C.')",
+      "MERGE INTO department (id, name) KEY (id) VALUES (5, 'Antioquia')",
+      "MERGE INTO city (id, name, department_id) KEY (id) VALUES (11001, 'Bogotá', 11)",
+      "MERGE INTO city (id, name, department_id) KEY (id) VALUES (5001, 'Medellín', 5)"
+    })
 class AuthIntegrationTest {
 
   @Autowired private MockMvc mockMvc;
@@ -179,8 +188,8 @@ class AuthIntegrationTest {
     request.setDniNumber(
         String.valueOf(Math.abs(UUID.randomUUID().hashCode()) % 900000000 + 100000000));
     request.setAddress("Calle 100");
-    request.setDepartment("Bogota");
-    request.setCity("Bogota D.C.");
+    request.setDepartment("Bogotá D.C.");
+    request.setCity("Bogotá");
     return request;
   }
 

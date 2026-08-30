@@ -22,11 +22,20 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@Sql(
+    executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS,
+    statements = {
+      "MERGE INTO department (id, name) KEY (id) VALUES (11, 'Bogotá D.C.')",
+      "MERGE INTO department (id, name) KEY (id) VALUES (5, 'Antioquia')",
+      "MERGE INTO city (id, name, department_id) KEY (id) VALUES (11001, 'Bogotá', 11)",
+      "MERGE INTO city (id, name, department_id) KEY (id) VALUES (5001, 'Medellín', 5)"
+    })
 class OrderIntegrationTest {
 
   @Autowired private MockMvc mockMvc;
@@ -171,8 +180,8 @@ class OrderIntegrationTest {
     request.setCustomerId(custId);
     request.setTotalAmount(new BigDecimal("250000"));
     request.setShippingAddress("Calle 100 #15-20");
-    request.setShippingDepartment("Bogota");
-    request.setShippingCity("Bogota D.C.");
+    request.setShippingDepartment("Bogotá D.C.");
+    request.setShippingCity("Bogotá");
     return request;
   }
 

@@ -54,6 +54,9 @@ class CheckoutUseCaseTest {
   @Mock private ApplicationEventPublisher eventPublisher;
   @Mock private SellerRepository sellerRepository;
 
+  @Mock
+  private com.eliteshop.colombia.shared.domain.LocationValidationService locationValidationService;
+
   private CheckoutUseCase checkoutUseCase;
 
   private final UUID customerId = UUID.randomUUID();
@@ -74,7 +77,8 @@ class CheckoutUseCaseTest {
             paymentGateway,
             orderUpdateUseCase,
             eventPublisher,
-            sellerRepository);
+            sellerRepository,
+            locationValidationService);
   }
 
   @Test

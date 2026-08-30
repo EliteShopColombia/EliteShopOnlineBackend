@@ -75,7 +75,9 @@ class OrderControllerAuthorizationTest {
             findByIdUseCase,
             org.mockito.Mockito.mock(FindOrdersByCustomerIdUseCase.class),
             mapper,
-            authHelper);
+            authHelper,
+            org.mockito.Mockito.mock(
+                com.eliteshop.colombia.shared.domain.LocationValidationService.class));
 
     OrderStatusController statusController =
         new OrderStatusController(
