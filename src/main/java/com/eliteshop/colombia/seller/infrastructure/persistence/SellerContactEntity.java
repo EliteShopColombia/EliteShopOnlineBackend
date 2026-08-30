@@ -1,5 +1,6 @@
 package com.eliteshop.colombia.seller.infrastructure.persistence;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -21,6 +22,7 @@ public class SellerContactEntity {
   @Column(name = "seller_id", updatable = false, nullable = false)
   private UUID id;
 
+  @JsonIgnore
   @OneToOne
   @MapsId
   @JoinColumn(name = "seller_id", nullable = false, unique = true)
