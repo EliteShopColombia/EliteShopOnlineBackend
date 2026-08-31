@@ -137,8 +137,7 @@ class CartUseCasesTest {
         new ProductSellerId(UUID.randomUUID()),
         new ProductName("Test Product"),
         new ProductPrice(BigDecimal.valueOf(50.00)),
-        new ProductStock(10),
-        java.util.List.of());
+        new ProductStock(10));
   }
 
   private Product buildProductWithStock(int stock) {
@@ -147,7 +146,6 @@ class CartUseCasesTest {
         new ProductSellerId(UUID.randomUUID()),
         new ProductName("Test Product"),
         new ProductPrice(BigDecimal.valueOf(50.00)),
-        new ProductStock(stock),
-        java.util.List.of());
+        new ProductStock(stock));
   }
 }

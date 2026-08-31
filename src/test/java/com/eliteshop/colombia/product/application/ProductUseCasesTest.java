@@ -118,7 +118,6 @@ class ProductUseCasesTest {
         new ProductSellerId(UUID.randomUUID()),
         new ProductName("Test Product"),
         new ProductPrice(BigDecimal.valueOf(50.00)),
-        new ProductStock(10),
-        java.util.List.of());
+        new ProductStock(10));
   }
 }

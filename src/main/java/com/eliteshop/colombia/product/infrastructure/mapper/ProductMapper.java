@@ -24,6 +24,7 @@ public class ProductMapper {
         new ProductName(entity.getName()),
         new ProductPrice(entity.getPrice()),
         new ProductStock(entity.getStock()),
+        toCategory(entity.getCategory()),
         new ArrayList<>());
   }
 
@@ -36,6 +37,7 @@ public class ProductMapper {
     entity.setName(domain.getName().getValue());
     entity.setPrice(domain.getPrice().getValue());
     entity.setStock(domain.getStock().getValue());
+    entity.setCategory(domain.getCategory() != null ? domain.getCategory().getValue() : null);
 
     return entity;
   }
@@ -54,11 +56,17 @@ public class ProductMapper {
         new ProductName(request.getName()),
         new ProductPrice(BigDecimal.valueOf(request.getPrice())),
         new ProductStock(request.getStock()),
+        toCategory(request.getCategory()),
         new ArrayList<>());
   }
 
   public Product toDomainFromUpdateRequest(ProductUpdateRequest request, Product existing) {
     if (request == null || existing == null) return null;
+
+    ProductCategory updatedCategory =
+        request.getCategory() != null
+            ? new ProductCategory(request.getCategory())
+            : existing.getCategory();
 
     return new Product(
         existing.getId(),
@@ -66,6 +74,7 @@ public class ProductMapper {
         new ProductName(request.getName()),
         new ProductPrice(BigDecimal.valueOf(request.getPrice())),
         new ProductStock(request.getStock()),
+        updatedCategory,
         existing.getImages());
   }
 
@@ -82,6 +91,7 @@ public class ProductMapper {
     response.setName(domain.getName().getValue());
     response.setPrice(domain.getPrice().getValue());
     response.setStock(domain.getStock().getValue());
+    response.setCategory(domain.getCategory() != null ? domain.getCategory().getValue() : null);
     if (domain.getImages() != null && !domain.getImages().isEmpty()) {
       response.setImages(
           domain.getImages().stream()
@@ -118,5 +128,12 @@ public class ProductMapper {
     entity.setImageUrl(domain.getImageUrl().getValue());
     entity.setOrder(domain.getOrder().getValue());
     return entity;
+  }
+
+  private ProductCategory toCategory(String value) {
+    if (value == null || value.isBlank()) {
+      return null;
+    }
+    return new ProductCategory(value);
   }
 }

@@ -69,6 +69,7 @@ public class ProductController {
               product.getName(),
               product.getPrice(),
               product.getStock(),
+              product.getCategory(),
               productImages);
     }
 
@@ -104,6 +105,7 @@ public class ProductController {
               product.getName(),
               product.getPrice(),
               product.getStock(),
+              product.getCategory(),
               productImages);
     }
 

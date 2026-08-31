@@ -30,4 +30,7 @@ public class ProductEntity {
 
   @Column(name = "product_stock", nullable = false)
   private Integer stock;
+
+  @Column(name = "product_category", length = 100)
+  private String category;
 }

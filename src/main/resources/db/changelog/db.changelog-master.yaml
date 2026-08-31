@@ -43,3 +43,5 @@ databaseChangeLog:
       file: db/migrations/026-seed-admin-dev.yaml
   - include:
       file: db/migrations/027-fix-admin-dev-password.yaml
+  - include:
+      file: db/migrations/028-add-product-category.yaml

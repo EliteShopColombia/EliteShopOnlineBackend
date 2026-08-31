@@ -15,6 +15,7 @@ public class Product {
   @NonNull private final ProductName name;
   @NonNull private final ProductPrice price;
   @NonNull private final ProductStock stock;
+  private final ProductCategory category;
   private final List<ProductImage> images;
 
   public Product(
@@ -22,8 +23,18 @@ public class Product {
       ProductSellerId sellerId,
       ProductName name,
       ProductPrice price,
+      ProductStock stock,
+      ProductCategory category) {
+    this(id, sellerId, name, price, stock, category, new ArrayList<>());
+  }
+
+  public Product(
+      ProductId id,
+      ProductSellerId sellerId,
+      ProductName name,
+      ProductPrice price,
       ProductStock stock) {
-    this(id, sellerId, name, price, stock, new ArrayList<>());
+    this(id, sellerId, name, price, stock, null, new ArrayList<>());
   }
 
   public List<ProductImage> getImages() {

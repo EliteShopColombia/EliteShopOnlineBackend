@@ -253,8 +253,7 @@ class CheckoutUseCaseTest {
         new ProductSellerId(sellerId),
         new ProductName("Laptop"),
         new ProductPrice(new BigDecimal("50000")),
-        new ProductStock(stock),
-        List.of());
+        new ProductStock(stock));
   }
 
   private Customer buildCustomer() {

@@ -39,6 +39,8 @@ public class ProductPostgresAdapter implements ProductRepository {
     existingEntity.setName(product.getName().getValue());
     existingEntity.setPrice(product.getPrice().getValue());
     existingEntity.setStock(product.getStock().getValue());
+    existingEntity.setCategory(
+        product.getCategory() != null ? product.getCategory().getValue() : null);
 
     jpaRepository.save(existingEntity);
   }
@@ -90,12 +92,18 @@ public class ProductPostgresAdapter implements ProductRepository {
     if (entity == null) return null;
     ProductId productId = new ProductId(entity.getId());
     List<ProductImage> images = productImageRepository.findByProductId(productId);
+    com.eliteshop.colombia.product.domain.model.ProductCategory category = null;
+    if (entity.getCategory() != null && !entity.getCategory().isBlank()) {
+      category =
+          new com.eliteshop.colombia.product.domain.model.ProductCategory(entity.getCategory());
+    }
     return new Product(
         productId,
         new com.eliteshop.colombia.product.domain.model.ProductSellerId(entity.getSellerId()),
         new ProductName(entity.getName()),
         new com.eliteshop.colombia.product.domain.model.ProductPrice(entity.getPrice()),
         new com.eliteshop.colombia.product.domain.model.ProductStock(entity.getStock()),
+        category,
         images);
   }
 }
