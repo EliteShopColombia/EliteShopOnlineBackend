@@ -38,8 +38,8 @@ public class SellerVerification {
   }
 
   public SellerVerification withDocumentUploaded(
-          SellerVerificationDocumentMinioKey documentMinioKey,
-          SellerVerificationDocumentNumber documentNumber) {
+      SellerVerificationDocumentMinioKey documentMinioKey,
+      SellerVerificationDocumentNumber documentNumber) {
     return new SellerVerification(
         this.id,
         this.sellerId,
@@ -82,7 +82,7 @@ public class SellerVerification {
         this.selfieMinioKey,
         SellerVerificationStatus.approved(),
         confidenceScore,
-        this.rejectionReason,
+        null,
         this.createdAt,
         new SellerVerificationUpdatedAt(Instant.now()));
   }

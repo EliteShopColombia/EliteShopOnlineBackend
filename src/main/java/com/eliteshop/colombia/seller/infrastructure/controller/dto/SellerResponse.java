@@ -19,4 +19,5 @@ public class SellerResponse {
   private Boolean isVerified;
   private Timestamp createdAt;
   private Timestamp updatedAt;
+  private String profileImage;
 }

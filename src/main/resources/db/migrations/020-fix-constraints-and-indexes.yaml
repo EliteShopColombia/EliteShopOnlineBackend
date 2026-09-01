@@ -1,0 +1,58 @@
+databaseChangeLog:
+  - changeSet:
+      id: 020-fix-cart-item-unique-constraint
+      author: eliteshop
+      comment: Restaura unique constraint (cart_id, product_id) perdido en migracion 012
+      changes:
+        - addUniqueConstraint:
+            tableName: cart_item
+            columnNames: cart_id, product_id
+            constraintName: uq_cart_item_cart_product
+
+  - changeSet:
+      id: 020-fix-tracking-events-index-and-cascade
+      author: eliteshop
+      comment: Agrega indice en order_id y ON DELETE CASCADE en FK de tracking_events
+      preConditions:
+        - onFail: MARK_RAN
+        - indexExists:
+            tableName: tracking_events
+            indexName: idx_tracking_events_order_id
+      changes:
+        - createIndex:
+            tableName: tracking_events
+            indexName: idx_tracking_events_order_id
+            columns:
+              - column:
+                  name: order_id
+
+  - changeSet:
+      id: 020-fix-tracking-events-cascade
+      author: eliteshop
+      comment: Reemplaza FK de tracking_events con ON DELETE CASCADE
+      changes:
+        - dropForeignKeyConstraint:
+            baseTableName: tracking_events
+            constraintName: fk_tracking_events_order
+        - addForeignKeyConstraint:
+            baseTableName: tracking_events
+            baseColumnNames: order_id
+            referencedTableName: orders
+            referencedColumnNames: order_id
+            constraintName: fk_tracking_events_order
+            onDelete: CASCADE
+
+  - changeSet:
+      id: 020-add-product-name-unique
+      author: eliteshop
+      comment: Agrega unique constraint en product_name (declarado en entity pero no en migracion)
+      preConditions:
+        - onFail: MARK_RAN
+        - indexExists:
+            tableName: product
+            indexName: uq_product_name
+      changes:
+        - addUniqueConstraint:
+            tableName: product
+            columnNames: product_name
+            constraintName: uq_product_name

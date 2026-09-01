@@ -1,6 +1,7 @@
 package com.eliteshop.colombia.seller.application.usecase;
 
 import com.eliteshop.colombia.seller.domain.event.SellerVerificationCompletedEvent;
+import com.eliteshop.colombia.seller.domain.exception.SellerNotFoundException;
 import com.eliteshop.colombia.seller.domain.model.Seller;
 import com.eliteshop.colombia.seller.domain.model.SellerId;
 import com.eliteshop.colombia.seller.domain.model.verification.*;
@@ -11,8 +12,10 @@ import java.io.InputStream;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 
+@Slf4j
 @RequiredArgsConstructor
 public class VerifySellerUseCase {
 
@@ -23,79 +26,110 @@ public class VerifySellerUseCase {
   private final ApplicationEventPublisher eventPublisher;
 
   public SellerVerification uploadDocument(UUID sellerId, String filename, InputStream stream) {
+    log.info("Subiendo documento de verificación para vendedor sellerId={}", sellerId);
     String objectKey = minIOAdapter.uploadDocument(sellerId.toString(), filename, stream);
 
     Seller seller =
-            sellerRepository
-                    .findById(new SellerId(sellerId))
-                    .orElseThrow(() -> new RuntimeException("Vendedor no encontrado"));
+        sellerRepository
+            .findById(new SellerId(sellerId))
+            .orElseThrow(
+                () -> {
+                  log.error("Vendedor no encontrado sellerId={}", sellerId);
+                  return new SellerNotFoundException("Vendedor no encontrado");
+                });
 
     SellerVerification verification =
-            repository
-                    .findBySellerId(sellerId)
-                    .orElseGet(() -> SellerVerification.create(new SellerVerificationSellerId(sellerId)));
+        repository
+            .findBySellerId(sellerId)
+            .orElseGet(() -> SellerVerification.create(new SellerVerificationSellerId(sellerId)));
 
-    verification = verification.withDocumentUploaded(
+    verification =
+        verification.withDocumentUploaded(
             new SellerVerificationDocumentMinioKey(objectKey),
-            new SellerVerificationDocumentNumber(seller.getDniNumber().getValue())
-    );
+            new SellerVerificationDocumentNumber(seller.getDniNumber().getValue()));
+    log.info("Documento subido exitosamente para vendedor sellerId={}", sellerId);
     return repository.save(verification);
   }
 
   public SellerVerification uploadSelfie(UUID sellerId, String filename, InputStream stream) {
+    log.info("Subiendo selfie de verificación para vendedor sellerId={}", sellerId);
     String objectKey = minIOAdapter.uploadSelfie(sellerId.toString(), filename, stream);
 
     SellerVerification verification =
-            repository
-                    .findBySellerId(sellerId)
-                    .orElseThrow(() -> new RuntimeException("Sube la cedula primero"));
+        repository
+            .findBySellerId(sellerId)
+            .orElseThrow(
+                () -> {
+                  log.error(
+                      "No existe verificación pendiente para sellerId={}, suba la cedula primero",
+                      sellerId);
+                  return new com.eliteshop.colombia.seller.domain.exception
+                      .SellerVerificationException("Sube la cedula primero");
+                });
 
-    verification = verification.withSelfieUploaded(
-            new SellerVerificationSelfieMinioKey(objectKey));
+    verification = verification.withSelfieUploaded(new SellerVerificationSelfieMinioKey(objectKey));
+    log.info("Selfie subida exitosamente para vendedor sellerId={}", sellerId);
     return repository.save(verification);
   }
 
   public SellerVerification validate(UUID sellerId) {
+    log.info("Validando verificación para vendedor sellerId={}", sellerId);
     SellerVerification verification =
-            repository
-                    .findBySellerId(sellerId)
-                    .orElseThrow(() -> new RuntimeException("No hay verificacion pendiente"));
+        repository
+            .findBySellerId(sellerId)
+            .orElseThrow(
+                () -> {
+                  log.error("No hay verificación pendiente para sellerId={}", sellerId);
+                  return new com.eliteshop.colombia.seller.domain.exception
+                      .SellerVerificationException("No hay verificación pendiente");
+                });
 
     if (!"SELFIE_UPLOADED".equals(verification.getStatus().getValue())) {
-      throw new RuntimeException("Primero sube la cedula y la selfie");
+      log.error(
+          "Verificación en estado incorrecto para sellerId={}: {}",
+          sellerId,
+          verification.getStatus().getValue());
+      throw new com.eliteshop.colombia.seller.domain.exception.SellerVerificationException(
+          "Primero sube la cedula y la selfie");
     }
 
     String selfieObject = verification.getSelfieMinioKey().getValue();
     String documentObject = verification.getDocumentMinioKey().getValue();
 
-    FaceMatcherAdapter.FaceMatchResult result = faceMatcherAdapter.match(selfieObject, documentObject);
+    FaceMatcherAdapter.FaceMatchResult result =
+        faceMatcherAdapter.match(selfieObject, documentObject);
 
     boolean isApproved = result.match() && result.confidence() >= 0.6;
 
     if (isApproved) {
       verification =
-              verification.approved(new SellerVerificationConfidenceScore(result.confidence()));
+          verification.approved(new SellerVerificationConfidenceScore(result.confidence()));
     } else {
-      verification =
-              verification.rejected(new SellerVerificationRejectionReason(result.message()));
+      verification = verification.rejected(new SellerVerificationRejectionReason(result.message()));
     }
 
     SellerVerification savedVerification = repository.save(verification);
 
     eventPublisher.publishEvent(
-            new SellerVerificationCompletedEvent(
-                    sellerId,
-                    isApproved,
-                    result.confidence(),
-                    result.message(),
-                    Instant.now()));
+        new SellerVerificationCompletedEvent(
+            sellerId, isApproved, result.confidence(), result.message(), Instant.now()));
 
+    log.info(
+        "Verificación completada para sellerId={}, aprobado={}, confianza={}",
+        sellerId,
+        isApproved,
+        result.confidence());
     return savedVerification;
   }
 
   public SellerVerification getStatus(UUID sellerId) {
+    log.info("Consultando estado de verificación para vendedor sellerId={}", sellerId);
     return repository
-            .findBySellerId(sellerId)
-            .orElseThrow(() -> new RuntimeException("No hay verificacion para este vendedor"));
+        .findBySellerId(sellerId)
+        .orElseThrow(
+            () -> {
+              log.error("No hay verificación para sellerId={}", sellerId);
+              return new SellerNotFoundException("No hay verificación para este vendedor");
+            });
   }
 }

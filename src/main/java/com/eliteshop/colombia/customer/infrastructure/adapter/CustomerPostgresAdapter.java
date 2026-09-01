@@ -63,7 +63,24 @@ public class CustomerPostgresAdapter implements CustomerRepository {
   }
 
   @Override
+  public com.eliteshop.colombia.shared.domain.PageResult<Customer> findPage(int page, int size) {
+    var pageable =
+        org.springframework.data.domain.PageRequest.of(
+            page, size, org.springframework.data.domain.Sort.by("createdAt").descending());
+    var result = jpaRepository.findAllWithInfo(pageable);
+    List<Customer> customers =
+        result.getContent().stream().map(mapper::toDomain).collect(Collectors.toList());
+    return com.eliteshop.colombia.shared.domain.PageResult.of(
+        customers, page, size, result.getTotalElements());
+  }
+
+  @Override
   public Optional<Customer> findById(CustomerId id) {
-    return jpaRepository.findById(id.getValue()).map(mapper::toDomain);
+    return jpaRepository.findByIdWithInfo(id.getValue()).map(mapper::toDomain);
+  }
+
+  @Override
+  public Optional<Customer> findByEmail(String email) {
+    return jpaRepository.findByEmail(email).map(mapper::toDomain);
   }
 }

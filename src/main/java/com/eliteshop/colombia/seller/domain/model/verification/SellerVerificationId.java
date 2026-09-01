@@ -6,14 +6,14 @@ import lombok.Getter;
 
 @Getter
 public class SellerVerificationId {
-    private final UUID value;
+  private final UUID value;
 
-    public SellerVerificationId(UUID value) {
-        Objects.requireNonNull(value, "El ID de verificacion no puede ser nulo");
-        this.value = value;
-    }
+  public SellerVerificationId(UUID value) {
+    Objects.requireNonNull(value, "El ID de verificacion no puede ser nulo");
+    this.value = value;
+  }
 
-    public static SellerVerificationId generate() {
-        return new SellerVerificationId(UUID.randomUUID());
-    }
+  public static SellerVerificationId generate() {
+    return new SellerVerificationId(UUID.randomUUID());
+  }
 }

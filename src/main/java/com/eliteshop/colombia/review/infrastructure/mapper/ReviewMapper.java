@@ -4,6 +4,10 @@ import com.eliteshop.colombia.review.domain.model.*;
 import com.eliteshop.colombia.review.infrastructure.controller.dto.ReviewRequest;
 import com.eliteshop.colombia.review.infrastructure.controller.dto.ReviewResponse;
 import com.eliteshop.colombia.review.infrastructure.persistence.ReviewEntity;
+import com.eliteshop.colombia.review.infrastructure.persistence.ReviewImageEntity;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -18,7 +22,7 @@ public class ReviewMapper {
         new ReviewCustomerId(entity.getCustomerId()),
         entity.getQualify() != null ? new ReviewQualify(entity.getQualify()) : null,
         entity.getContent() != null ? new ReviewContent(entity.getContent()) : null,
-        entity.getImage() != null ? new ReviewImage(entity.getImage()) : null);
+        new ArrayList<>());
   }
 
   public ReviewEntity toEntity(Review domain) {
@@ -34,23 +38,25 @@ public class ReviewMapper {
     if (domain.getContent() != null) {
       entity.setContent(domain.getContent().getValue());
     }
-    if (domain.getImage() != null) {
-      entity.setImage(domain.getImage().getValue());
-    }
 
     return entity;
   }
 
   public Review toDomainFromRequest(ReviewRequest request) {
     if (request == null) return null;
+    return toDomainFromRequest(request, request.getCustomerId());
+  }
+
+  public Review toDomainFromRequest(ReviewRequest request, java.util.UUID customerId) {
+    if (request == null) return null;
 
     return new Review(
         ReviewId.generate(),
         new ReviewProductId(request.getProductId()),
-        new ReviewCustomerId(request.getCustomerId()),
+        new ReviewCustomerId(customerId),
         request.getQualify() != null ? new ReviewQualify(request.getQualify()) : null,
         request.getContent() != null ? new ReviewContent(request.getContent()) : null,
-        request.getImage() != null ? new ReviewImage(request.getImage()) : null);
+        new ArrayList<>());
   }
 
   public ReviewResponse toResponse(Review domain) {
@@ -66,10 +72,34 @@ public class ReviewMapper {
     if (domain.getContent() != null) {
       response.setContent(domain.getContent().getValue());
     }
-    if (domain.getImage() != null) {
-      response.setImage(domain.getImage().getValue());
+    if (domain.getImages() != null) {
+      response.setImages(
+          domain.getImages().stream()
+              .map(img -> img.getImageUrl().getValue())
+              .collect(Collectors.toList()));
+    } else {
+      response.setImages(Collections.emptyList());
     }
 
     return response;
+  }
+
+  public ReviewImage toDomain(ReviewImageEntity entity) {
+    if (entity == null) return null;
+    return new ReviewImage(
+        new ReviewImageId(entity.getId()),
+        new ReviewId(entity.getReviewId()),
+        new ReviewImageUrl(entity.getImageUrl()),
+        new ReviewImageOrder(entity.getOrder()));
+  }
+
+  public ReviewImageEntity toEntity(ReviewImage domain) {
+    if (domain == null) return null;
+    ReviewImageEntity entity = new ReviewImageEntity();
+    entity.setId(domain.getId().getValue());
+    entity.setReviewId(domain.getReviewId().getValue());
+    entity.setImageUrl(domain.getImageUrl().getValue());
+    entity.setOrder(domain.getOrder().getValue());
+    return entity;
   }
 }

@@ -5,7 +5,7 @@ import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface SellerVerificationJpaRepository
-        extends JpaRepository<SellerVerificationEntity, UUID> {
+    extends JpaRepository<SellerVerificationEntity, UUID> {
 
-    Optional<SellerVerificationEntity> findBySellerId(UUID sellerId);
+  Optional<SellerVerificationEntity> findBySellerId(UUID sellerId);
 }

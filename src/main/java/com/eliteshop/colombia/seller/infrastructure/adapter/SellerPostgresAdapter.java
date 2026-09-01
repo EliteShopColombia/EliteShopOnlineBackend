@@ -39,6 +39,8 @@ public class SellerPostgresAdapter implements SellerRepository {
     existingEntity.setTradeName(seller.getTradeName().getValue());
     existingEntity.setFullname(seller.getFullname().getValue());
     existingEntity.setIsActive(seller.getIsActive().getValue());
+    existingEntity.setProfileImage(
+        seller.getProfileImage() != null ? seller.getProfileImage().getValue() : null);
     existingEntity.setUpdatedAt(Timestamp.from(Instant.now()));
 
     if (seller.getContact() != null && existingEntity.getContact() != null) {
@@ -73,6 +75,18 @@ public class SellerPostgresAdapter implements SellerRepository {
   }
 
   @Override
+  public com.eliteshop.colombia.shared.domain.PageResult<Seller> findPage(int page, int size) {
+    var pageable =
+        org.springframework.data.domain.PageRequest.of(
+            page, size, org.springframework.data.domain.Sort.by("createdAt").descending());
+    var result = jpaRepository.findAll(pageable);
+    List<Seller> sellers =
+        result.getContent().stream().map(mapper::toDomain).collect(Collectors.toList());
+    return com.eliteshop.colombia.shared.domain.PageResult.of(
+        sellers, page, size, result.getTotalElements());
+  }
+
+  @Override
   public Optional<Seller> findById(SellerId id) {
     return jpaRepository.findById(id.getValue()).map(mapper::toDomain);
   }
@@ -80,5 +94,10 @@ public class SellerPostgresAdapter implements SellerRepository {
   @Override
   public Optional<Seller> findByDniNumber(SellerDniNumber dniNumber) {
     return jpaRepository.findByDniNumber(dniNumber.getValue()).map(mapper::toDomain);
+  }
+
+  @Override
+  public Optional<Seller> findByEmail(String email) {
+    return jpaRepository.findByContactEmail(email).map(mapper::toDomain);
   }
 }

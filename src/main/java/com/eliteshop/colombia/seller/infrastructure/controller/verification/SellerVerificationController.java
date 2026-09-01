@@ -3,11 +3,15 @@ package com.eliteshop.colombia.seller.infrastructure.controller.verification;
 import com.eliteshop.colombia.seller.application.usecase.VerifySellerUseCase;
 import com.eliteshop.colombia.seller.domain.model.verification.SellerVerification;
 import java.io.InputStream;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -16,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/sellers/{sellerId}/verification")
 @RequiredArgsConstructor
@@ -26,10 +31,16 @@ public class SellerVerificationController {
 
   private final VerifySellerUseCase verifySellerUseCase;
   private final SellerVerificationMapperResponse mapper;
+  private final ThreadPoolTaskExecutor sellerVerificationExecutor;
+  private final com.eliteshop.colombia.shared.security.AuthorizationService authorizationService;
 
   @PostMapping(value = "/document", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public ResponseEntity<?> uploadDocument(
-      @PathVariable UUID sellerId, @RequestParam("file") MultipartFile file) {
+      @PathVariable UUID sellerId,
+      @RequestParam("file") MultipartFile file,
+      Authentication authentication,
+      jakarta.servlet.http.HttpServletRequest request) {
+    requireSellerAccess(sellerId, authentication, request);
     String validationError = validateFile(file);
     if (validationError != null) {
       return ResponseEntity.badRequest().body(validationError);
@@ -46,7 +57,11 @@ public class SellerVerificationController {
 
   @PostMapping(value = "/selfie", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public ResponseEntity<?> uploadSelfie(
-      @PathVariable UUID sellerId, @RequestParam("file") MultipartFile file) {
+      @PathVariable UUID sellerId,
+      @RequestParam("file") MultipartFile file,
+      Authentication authentication,
+      jakarta.servlet.http.HttpServletRequest request) {
+    requireSellerAccess(sellerId, authentication, request);
     String validationError = validateFile(file);
     if (validationError != null) {
       return ResponseEntity.badRequest().body(validationError);
@@ -62,15 +77,58 @@ public class SellerVerificationController {
   }
 
   @PostMapping("/validate")
-  public ResponseEntity<SellerVerificationResponse> validate(@PathVariable UUID sellerId) {
-    SellerVerification verification = verifySellerUseCase.validate(sellerId);
-    return ResponseEntity.ok(mapper.toResponse(verification));
+  public ResponseEntity<Map<String, String>> validate(
+      @PathVariable UUID sellerId,
+      Authentication authentication,
+      jakarta.servlet.http.HttpServletRequest request) {
+    requireSellerAccess(sellerId, authentication, request);
+    SellerVerification verification = verifySellerUseCase.getStatus(sellerId);
+
+    if (!"SELFIE_UPLOADED".equals(verification.getStatus().getValue())) {
+      throw new com.eliteshop.colombia.seller.domain.exception.SellerVerificationException(
+          "Primero sube la cedula y la selfie");
+    }
+
+    runValidationAsync(sellerId);
+
+    return ResponseEntity.accepted()
+        .body(
+            Map.of(
+                "status", "PROCESSING",
+                "message",
+                    "Verificación en proceso. Consulta GET /verification para el resultado"));
+  }
+
+  private void runValidationAsync(UUID sellerId) {
+    sellerVerificationExecutor.execute(
+        () -> {
+          try {
+            log.info("Iniciando validacion asincrona para sellerId={}", sellerId);
+            verifySellerUseCase.validate(sellerId);
+            log.info("Validacion completada para sellerId={}", sellerId);
+          } catch (Exception e) {
+            log.error(
+                "Error en validacion asincrona para sellerId={}: {}", sellerId, e.getMessage(), e);
+          }
+        });
   }
 
   @GetMapping
-  public ResponseEntity<SellerVerificationResponse> getStatus(@PathVariable UUID sellerId) {
+  public ResponseEntity<SellerVerificationResponse> getStatus(
+      @PathVariable UUID sellerId,
+      Authentication authentication,
+      jakarta.servlet.http.HttpServletRequest request) {
+    requireSellerAccess(sellerId, authentication, request);
     SellerVerification verification = verifySellerUseCase.getStatus(sellerId);
     return ResponseEntity.ok(mapper.toResponse(verification));
+  }
+
+  private void requireSellerAccess(
+      UUID sellerId,
+      Authentication authentication,
+      jakarta.servlet.http.HttpServletRequest request) {
+    authorizationService.requireSeller(
+        authentication, sellerId, (String) request.getAttribute("gateway.sellerId"));
   }
 
   private String validateFile(MultipartFile file) {

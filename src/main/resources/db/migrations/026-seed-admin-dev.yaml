@@ -1,0 +1,19 @@
+databaseChangeLog:
+  - changeSet:
+      id: 026-seed-admin-dev-user
+      author: eliteshop
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO customer (customer_id, customer_first_name, customer_last_name, customer_email, customer_phone_number, customer_password, customer_role, customer_created_at)
+              VALUES (
+                'b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a22',
+                'Admin',
+                'Dev',
+                'admin-dev@eliteshop.com',
+                '3009876543',
+                '$2a$10$RvlzvfUxIlKB/.uHuoT1o.rHa2wWrZrqxpEE4lJ3q2kzMfreNNUbe',
+                'admin',
+                CURRENT_TIMESTAMP
+              )
+              ON CONFLICT (customer_email) DO NOTHING;

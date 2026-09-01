@@ -1,5 +1,6 @@
 package com.eliteshop.colombia.customer.infrastructure.persistence;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -33,11 +34,15 @@ public class CustomerEntity {
   @Column(name = "customer_phone_number", nullable = false)
   private String phoneNumber;
 
+  @JsonIgnore
   @Column(name = "customer_password", nullable = false)
   private String password;
 
   @Column(name = "customer_profile_image")
   private String profileImage;
+
+  @Column(name = "customer_role", nullable = false)
+  private String role;
 
   @Column(name = "customer_created_at", nullable = false, updatable = false)
   private Timestamp createdAt;

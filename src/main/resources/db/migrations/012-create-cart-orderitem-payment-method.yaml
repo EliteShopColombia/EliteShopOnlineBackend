@@ -1,0 +1,264 @@
+databaseChangeLog:
+  - changeSet:
+      id: 012-drop-legacy-cart-order-tables
+      author: eliteshop
+      preconditions:
+        - onFail: MARK_RAN
+        - sqlCheck:
+            expectedResult: "1"
+            sql: "SELECT count(*) FROM information_schema.tables WHERE table_name IN ('cart_item', 'cart', 'order_item') AND table_schema = current_schema()"
+      changes:
+        - sql:
+            sql: |
+              DROP TABLE IF EXISTS cart_item CASCADE;
+              DROP TABLE IF EXISTS cart CASCADE;
+              DROP TABLE IF EXISTS order_item CASCADE;
+
+  - changeSet:
+      id: 012-create-order-item-table
+      author: eliteshop
+      changes:
+        - createTable:
+            tableName: order_item
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: order_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: product_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: seller_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: quantity
+                  type: integer
+                  constraints:
+                    nullable: false
+              - column:
+                  name: unit_price
+                  type: decimal(12,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: subtotal
+                  type: decimal(12,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: order_item
+            baseColumnNames: order_id
+            referencedTableName: orders
+            referencedColumnNames: order_id
+            constraintName: fk_order_item_order
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableName: order_item
+            baseColumnNames: product_id
+            referencedTableName: product
+            referencedColumnNames: product_id
+            constraintName: fk_order_item_product
+        - addForeignKeyConstraint:
+            baseTableName: order_item
+            baseColumnNames: seller_id
+            referencedTableName: seller
+            referencedColumnNames: seller_id
+            constraintName: fk_order_item_seller
+        - createIndex:
+            indexName: idx_order_item_order_id
+            tableName: order_item
+            columns:
+              - column:
+                  name: order_id
+
+  - changeSet:
+      id: 012-create-cart-table
+      author: eliteshop
+      changes:
+        - createTable:
+            tableName: cart
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: customer_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: cart
+            baseColumnNames: customer_id
+            referencedTableName: customer
+            referencedColumnNames: customer_id
+            constraintName: fk_cart_customer
+            onDelete: CASCADE
+
+  - changeSet:
+      id: 012-create-cart-item-table
+      author: eliteshop
+      changes:
+        - createTable:
+            tableName: cart_item
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: cart_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: product_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: quantity
+                  type: integer
+                  constraints:
+                    nullable: false
+              - column:
+                  name: unit_price
+                  type: decimal(12,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: added_at
+                  type: timestamp
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: cart_item
+            baseColumnNames: cart_id
+            referencedTableName: cart
+            referencedColumnNames: id
+            constraintName: fk_cart_item_cart
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableName: cart_item
+            baseColumnNames: product_id
+            referencedTableName: product
+            referencedColumnNames: product_id
+            constraintName: fk_cart_item_product
+            onDelete: CASCADE
+        - createIndex:
+            indexName: idx_cart_item_cart_id
+            tableName: cart_item
+            columns:
+              - column:
+                  name: cart_id
+        - createIndex:
+            indexName: idx_cart_item_product_id
+            tableName: cart_item
+            columns:
+              - column:
+                  name: product_id
+
+  - changeSet:
+      id: 012-create-customer-payment-method-table
+      author: eliteshop
+      changes:
+        - createTable:
+            tableName: customer_payment_method
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: customer_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: epayco_token
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: last4
+                  type: varchar(4)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: brand
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: expiry_month
+                  type: integer
+                  constraints:
+                    nullable: false
+              - column:
+                  name: expiry_year
+                  type: integer
+                  constraints:
+                    nullable: false
+              - column:
+                  name: is_default
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: customer_payment_method
+            baseColumnNames: customer_id
+            referencedTableName: customer
+            referencedColumnNames: customer_id
+            constraintName: fk_customer_payment_method_customer
+            onDelete: CASCADE
+        - createIndex:
+            indexName: idx_customer_payment_method_customer_id
+            tableName: customer_payment_method
+            columns:
+              - column:
+                  name: customer_id

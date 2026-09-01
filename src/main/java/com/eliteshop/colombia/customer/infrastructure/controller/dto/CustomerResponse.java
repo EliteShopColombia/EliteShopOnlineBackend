@@ -15,6 +15,7 @@ public class CustomerResponse {
   private String email;
   private String phoneNumber;
   private String profileImage;
+  private String role;
   private Timestamp createdAt;
   private Timestamp updatedAt;
   private String dniType;
