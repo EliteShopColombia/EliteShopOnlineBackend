@@ -41,7 +41,7 @@ public class CustomerRequest {
   @Size(min = 1, max = 150, message = "Address must be between 1 and 150 characters")
   private String address;
 
-  @Size(min = 1, max = 50, message = "Department must be between 1 and 50 characters")
+  @Size(min = 1, max = 60, message = "Department must be between 1 and 60 characters")
   private String department;
 
   @Size(min = 1, max = 60, message = "City must be between 1 and 60 characters")

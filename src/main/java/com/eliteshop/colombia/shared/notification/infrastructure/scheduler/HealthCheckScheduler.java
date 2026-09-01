@@ -8,11 +8,13 @@ import java.time.format.DateTimeFormatter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
 @Slf4j
+@ConditionalOnProperty(name = "healthcheck.enabled", havingValue = "true", matchIfMissing = false)
 @Component
 @RequiredArgsConstructor
 public class HealthCheckScheduler {
@@ -34,7 +36,8 @@ public class HealthCheckScheduler {
       String healthUrl = "http://localhost:8080" + "/actuator/health";
       log.info("Consultando: {}", healthUrl);
 
-      String response = notificationWebClient.get().uri(healthUrl).retrieve().bodyToMono(String.class).block();
+      String response =
+          notificationWebClient.get().uri(healthUrl).retrieve().bodyToMono(String.class).block();
 
       JsonNode root = objectMapper.readTree(response);
       String status = root.path("status").asText("UNKNOWN");

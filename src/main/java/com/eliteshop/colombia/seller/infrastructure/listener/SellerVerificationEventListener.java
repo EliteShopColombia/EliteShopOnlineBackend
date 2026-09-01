@@ -31,7 +31,7 @@ public class SellerVerificationEventListener {
   @EventListener
   public void handleVerificationCompleted(SellerVerificationCompletedEvent event) {
     log.info(
-        "Evento de verificacion recibido: sellerId={}, verified={}",
+        "Evento de verificación recibido: sellerId={}, verified={}",
         event.sellerId(),
         event.verified());
 
@@ -44,6 +44,8 @@ public class SellerVerificationEventListener {
       sendRejectedNotification(event);
       emailService.sendRejectedEmail(event);
     }
+
+    log.info("Verificación procesada para sellerId={}", event.sellerId());
   }
 
   private void updateSellerVerifiedStatus(UUID sellerId, boolean verified) {
@@ -55,7 +57,7 @@ public class SellerVerificationEventListener {
               seller.setUpdatedAt(Timestamp.from(Instant.now()));
               sellerRepository.save(seller);
               log.info(
-                  "Estado de verificacion actualizado: sellerId={}, isVerified={}",
+                  "Estado de verificación actualizado: sellerId={}, isVerified={}",
                   sellerId,
                   verified);
             });
@@ -68,10 +70,8 @@ public class SellerVerificationEventListener {
                 + "• ID: `%s`\n"
                 + "• Confianza: %.0f%%\n"
                 + "• Hora: %s",
-            event.sellerId(),
-            event.confidence() * 100,
-            TIME_FORMATTER.format(event.occurredAt()));
-    slackWebhookAdapter.sendToChannel("notificaciones", message);
+            event.sellerId(), event.confidence() * 100, TIME_FORMATTER.format(event.occurredAt()));
+    slackWebhookAdapter.sendToChannel("notifications-test", message);
   }
 
   private void sendRejectedNotification(SellerVerificationCompletedEvent event) {
@@ -81,9 +81,7 @@ public class SellerVerificationEventListener {
                 + "• ID Vendedor: `%s`\n"
                 + "• Razon: %s\n"
                 + "• Hora: %s",
-            event.sellerId(),
-            event.message(),
-            TIME_FORMATTER.format(event.occurredAt()));
-    slackWebhookAdapter.sendToChannel("fraude", message);
+            event.sellerId(), event.message(), TIME_FORMATTER.format(event.occurredAt()));
+    slackWebhookAdapter.sendToChannel("notifications-test", message);
   }
 }

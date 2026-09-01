@@ -1,6 +1,7 @@
 package com.eliteshop.colombia.product.infrastructure.controller.dto;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
@@ -14,4 +15,6 @@ public class ProductResponse {
   private String name;
   private BigDecimal price;
   private Integer stock;
+  private String category;
+  private List<String> images;
 }

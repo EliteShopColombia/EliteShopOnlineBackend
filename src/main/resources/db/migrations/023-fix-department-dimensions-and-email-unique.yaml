@@ -1,0 +1,33 @@
+databaseChangeLog:
+  - changeSet:
+      id: 023-fix-department-dimensions
+      author: eliteshop
+      comment: >-
+        Amplia columnas de departamento de VARCHAR(50) a VARCHAR(60) para
+        soportar departamentos reales como "Archipiélago de San Andrés,
+        Providencia y Santa Catalina" (56 caracteres).
+      changes:
+        - modifyDataType:
+            tableName: customer_info
+            columnName: customer_department
+            newDataType: VARCHAR(60)
+
+        - modifyDataType:
+            tableName: seller_contact
+            columnName: seller_trade_department
+            newDataType: VARCHAR(60)
+
+  - changeSet:
+      id: 023-add-seller-email-unique
+      author: eliteshop
+      comment: Agrega constraint UNIQUE en seller_email para prevenir duplicados
+      preConditions:
+        - onFail: MARK_RAN
+        - uniqueConstraintExists:
+            tableName: seller_contact
+            constraintName: uq_seller_email
+      changes:
+        - addUniqueConstraint:
+            tableName: seller_contact
+            columnNames: seller_email
+            constraintName: uq_seller_email

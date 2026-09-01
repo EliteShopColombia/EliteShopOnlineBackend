@@ -17,14 +17,11 @@ import com.eliteshop.colombia.customer.domain.model.CustomerLastName;
 import com.eliteshop.colombia.customer.domain.model.CustomerPassword;
 import com.eliteshop.colombia.customer.domain.model.CustomerPhoneNumber;
 import com.eliteshop.colombia.customer.domain.model.CustomerProfileImage;
+import com.eliteshop.colombia.customer.domain.model.CustomerRole;
 import com.eliteshop.colombia.customer.domain.model.CustomerUpdatedAt;
-import com.eliteshop.colombia.customer.infrastructure.controller.dto.CustomerRequest;
 import com.eliteshop.colombia.customer.infrastructure.controller.dto.CustomerResponse;
 import com.eliteshop.colombia.customer.infrastructure.persistence.CustomerEntity;
 import com.eliteshop.colombia.customer.infrastructure.persistence.CustomerInfoEntity;
-import java.sql.Timestamp;
-import java.time.Instant;
-import java.util.UUID;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -58,6 +55,7 @@ public class CustomerMapper {
         entity.getProfileImage() != null
             ? new CustomerProfileImage(entity.getProfileImage())
             : null,
+        new CustomerRole(entity.getRole() != null ? entity.getRole() : "customer"),
         new CustomerCreatedAt(entity.getCreatedAt()),
         entity.getUpdatedAt() != null ? new CustomerUpdatedAt(entity.getUpdatedAt()) : null,
         info);
@@ -77,6 +75,7 @@ public class CustomerMapper {
     if (domain.getProfileImage() != null) {
       entity.setProfileImage(domain.getProfileImage().getValue());
     }
+    entity.setRole(domain.getRole() != null ? domain.getRole().getValue() : "customer");
     entity.setCreatedAt(domain.getCreatedAt().getValue());
     if (domain.getUpdatedAt() != null) {
       entity.setUpdatedAt(domain.getUpdatedAt().getValue());
@@ -98,37 +97,6 @@ public class CustomerMapper {
     return entity;
   }
 
-  public Customer toDomainFromRequest(CustomerRequest request) {
-    if (request == null) {
-      return null;
-    }
-    CustomerInfo info = null;
-    if (request.getDniType() != null) {
-      info =
-          new CustomerInfo(
-              new CustomerDniType(request.getDniType()),
-              new CustomerDniNumber(request.getDniNumber()),
-              new CustomerAddress(request.getAddress()),
-              new CustomerDepartment(request.getDepartment()),
-              new CustomerCity(request.getCity()),
-              new CustomerDniCreatedAt(Timestamp.from(Instant.now())),
-              null);
-    }
-    return new Customer(
-        new CustomerId(UUID.randomUUID()),
-        new CustomerFirstName(request.getFirstName()),
-        new CustomerLastName(request.getLastName()),
-        new CustomerEmail(request.getEmail()),
-        new CustomerPhoneNumber(request.getPhoneNumber()),
-        new CustomerPassword(request.getPassword()),
-        request.getProfileImage() != null
-            ? new CustomerProfileImage(request.getProfileImage())
-            : null,
-        new CustomerCreatedAt(Timestamp.from(Instant.now())),
-        null,
-        info);
-  }
-
   public CustomerResponse toResponse(Customer domain) {
     if (domain == null) {
       return null;
@@ -142,6 +110,7 @@ public class CustomerMapper {
     if (domain.getProfileImage() != null) {
       response.setProfileImage(domain.getProfileImage().getValue());
     }
+    response.setRole(domain.getRole() != null ? domain.getRole().getValue() : "customer");
     response.setCreatedAt(domain.getCreatedAt().getValue());
     if (domain.getUpdatedAt() != null) {
       response.setUpdatedAt(domain.getUpdatedAt().getValue());

@@ -15,23 +15,23 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class SellerVerificationPostgresAdapter implements SellerVerificationRepository {
 
-    private final SellerVerificationJpaRepository jpaRepository;
-    private final SellerVerificationMapper mapper;
+  private final SellerVerificationJpaRepository jpaRepository;
+  private final SellerVerificationMapper mapper;
 
-    @Override
-    public SellerVerification save(SellerVerification verification) {
-        SellerVerificationEntity entity = mapper.toEntity(verification);
-        SellerVerificationEntity savedEntity = jpaRepository.save(entity);
-        return mapper.toDomain(savedEntity);
-    }
+  @Override
+  public SellerVerification save(SellerVerification verification) {
+    SellerVerificationEntity entity = mapper.toEntity(verification);
+    SellerVerificationEntity savedEntity = jpaRepository.save(entity);
+    return mapper.toDomain(savedEntity);
+  }
 
-    @Override
-    public Optional<SellerVerification> findById(SellerVerificationId id) {
-        return jpaRepository.findById(id.getValue()).map(mapper::toDomain);
-    }
+  @Override
+  public Optional<SellerVerification> findById(SellerVerificationId id) {
+    return jpaRepository.findById(id.getValue()).map(mapper::toDomain);
+  }
 
-    @Override
-    public Optional<SellerVerification> findBySellerId(UUID sellerId) {
-        return jpaRepository.findBySellerId(sellerId).map(mapper::toDomain);
-    }
+  @Override
+  public Optional<SellerVerification> findBySellerId(UUID sellerId) {
+    return jpaRepository.findBySellerId(sellerId).map(mapper::toDomain);
+  }
 }

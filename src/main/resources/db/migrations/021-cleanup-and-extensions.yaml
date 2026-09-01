@@ -1,0 +1,24 @@
+databaseChangeLog:
+  - changeSet:
+      id: 021-create-uuid-ossp-extension
+      author: eliteshop
+      comment: Crea extension uuid-ossp requerida por uuid_generate_v4() en migracion 017
+      changes:
+        - sql:
+            sql: CREATE EXTENSION IF NOT EXISTS "uuid-ossp"
+
+  - changeSet:
+      id: 021-drop-product-review-image-column
+      author: eliteshop
+      comment: Elimina columna huérfana product_review_image de product_review (reemplazada por tabla review_image en 009)
+      preConditions:
+        - onFail: MARK_RAN
+        - columnExists:
+            tableName: product_review
+            columnName: product_review_image
+      changes:
+        - dropColumn:
+            tableName: product_review
+            columns:
+              - column:
+                  name: product_review_image

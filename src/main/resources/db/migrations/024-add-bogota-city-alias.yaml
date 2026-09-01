@@ -1,0 +1,21 @@
+databaseChangeLog:
+  - changeSet:
+      id: 024-add-bogota-city-alias
+      author: eliteshop
+      comment: >
+        Add "Bogotá" as an alias city for department 11 (Bogotá D.C.) so users
+        who type "Bogotá" without "D.C." are accepted. The original "Bogotá D.C."
+        city (id=11001) is preserved for backward compatibility.
+      changes:
+        - insert:
+            tableName: city
+            columns:
+              - column:
+                  name: id
+                  value: 11002
+              - column:
+                  name: name
+                  value: "Bogotá"
+              - column:
+                  name: department_id
+                  value: 11

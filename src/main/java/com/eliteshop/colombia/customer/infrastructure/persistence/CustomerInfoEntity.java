@@ -1,5 +1,6 @@
 package com.eliteshop.colombia.customer.infrastructure.persistence;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -22,6 +23,7 @@ public class CustomerInfoEntity {
   @Column(name = "customer_id", updatable = false, nullable = false)
   private UUID id;
 
+  @JsonIgnore
   @OneToOne
   @MapsId
   @JoinColumn(name = "customer_id", nullable = false, unique = true)

@@ -14,6 +14,7 @@ public class Customer {
   @NonNull private final CustomerPhoneNumber phoneNumber;
   @NonNull private final CustomerPassword password;
   private final CustomerProfileImage profileImage;
+  @NonNull private final CustomerRole role;
   @NonNull private final CustomerCreatedAt createdAt;
   private final CustomerUpdatedAt updatedAt;
   private final CustomerInfo info;

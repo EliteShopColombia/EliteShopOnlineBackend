@@ -13,3 +13,35 @@ databaseChangeLog:
       file: db/migrations/006-add-seller-is-verified.yaml
   - include:
       file: db/migrations/007-seller-verification-delete-cascade.yaml
+  - include:
+      file: db/migrations/009-create-product-review-image-tables.yaml
+  - include:
+      file: db/migrations/012-create-cart-orderitem-payment-method.yaml
+  - include:
+      file: db/migrations/013-add-epayco-customer-id-to-customer-payment-method.yaml
+  - include:
+      file: db/migrations/016-add-shipping-fields-to-orders.yaml
+  - include:
+      file: db/migrations/017-create-tracking-events.yaml
+  - include:
+      file: db/migrations/018-add-dispute-reason-to-orders.yaml
+  - include:
+      file: db/migrations/019-fix-payment-info-schema.yaml
+  - include:
+      file: db/migrations/020-fix-constraints-and-indexes.yaml
+  - include:
+      file: db/migrations/021-cleanup-and-extensions.yaml
+  - include:
+      file: db/migrations/022-add-seller-profile-image.yaml
+  - include:
+      file: db/migrations/023-fix-department-dimensions-and-email-unique.yaml
+  - include:
+      file: db/migrations/024-add-bogota-city-alias.yaml
+  - include:
+      file: db/migrations/025-add-customer-role-and-admin-seed.yaml
+  - include:
+      file: db/migrations/026-seed-admin-dev.yaml
+  - include:
+      file: db/migrations/027-fix-admin-dev-password.yaml
+  - include:
+      file: db/migrations/028-add-product-category.yaml

@@ -7,5 +7,5 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Getter
 public class SellerVerificationCreatedAt {
-    private final Instant value;
+  private final Instant value;
 }

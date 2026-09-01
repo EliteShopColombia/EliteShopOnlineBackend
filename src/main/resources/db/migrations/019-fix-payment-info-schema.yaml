@@ -1,0 +1,319 @@
+databaseChangeLog:
+  - changeSet:
+      id: 019-drop-transaction-id
+      author: eliteshop
+      comment: Elimina columna transaction_id si existe (legacy de migracion 001)
+      preConditions:
+        - onFail: MARK_RAN
+        - columnExists:
+            tableName: payment_info
+            columnName: transaction_id
+      changes:
+        - dropColumn:
+            tableName: payment_info
+            columns:
+              - column:
+                  name: transaction_id
+
+  - changeSet:
+      id: 019-drop-paid-at
+      author: eliteshop
+      comment: Elimina columna paid_at si existe (legacy de migracion 001)
+      preConditions:
+        - onFail: MARK_RAN
+        - columnExists:
+            tableName: payment_info
+            columnName: paid_at
+      changes:
+        - dropColumn:
+            tableName: payment_info
+            columns:
+              - column:
+                  name: paid_at
+
+  - changeSet:
+      id: 019-add-seller-id
+      author: eliteshop
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: payment_info
+                columnName: seller_id
+      changes:
+        - addColumn:
+            tableName: payment_info
+            columns:
+              - column:
+                  name: seller_id
+                  type: uuid
+
+  - changeSet:
+      id: 019-add-amount
+      author: eliteshop
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: payment_info
+                columnName: amount
+      changes:
+        - addColumn:
+            tableName: payment_info
+            columns:
+              - column:
+                  name: amount
+                  type: decimal(15, 2)
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 019-add-currency
+      author: eliteshop
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: payment_info
+                columnName: currency
+      changes:
+        - addColumn:
+            tableName: payment_info
+            columns:
+              - column:
+                  name: currency
+                  type: varchar(3)
+                  defaultValueNumeric: "'COP'"
+
+  - changeSet:
+      id: 019-add-epayco-ref-id
+      author: eliteshop
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: payment_info
+                columnName: epayco_ref_id
+      changes:
+        - addColumn:
+            tableName: payment_info
+            columns:
+              - column:
+                  name: epayco_ref_id
+                  type: varchar(255)
+
+  - changeSet:
+      id: 019-add-session-id
+      author: eliteshop
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: payment_info
+                columnName: session_id
+      changes:
+        - addColumn:
+            tableName: payment_info
+            columns:
+              - column:
+                  name: session_id
+                  type: varchar(255)
+
+  - changeSet:
+      id: 019-add-invoice
+      author: eliteshop
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: payment_info
+                columnName: invoice
+      changes:
+        - addColumn:
+            tableName: payment_info
+            columns:
+              - column:
+                  name: invoice
+                  type: varchar(255)
+
+  - changeSet:
+      id: 019-add-customer-email
+      author: eliteshop
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: payment_info
+                columnName: customer_email
+      changes:
+        - addColumn:
+            tableName: payment_info
+            columns:
+              - column:
+                  name: customer_email
+                  type: varchar(255)
+
+  - changeSet:
+      id: 019-add-platform-fee
+      author: eliteshop
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: payment_info
+                columnName: platform_fee
+      changes:
+        - addColumn:
+            tableName: payment_info
+            columns:
+              - column:
+                  name: platform_fee
+                  type: decimal(15, 2)
+
+  - changeSet:
+      id: 019-add-seller-amount
+      author: eliteshop
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: payment_info
+                columnName: seller_amount
+      changes:
+        - addColumn:
+            tableName: payment_info
+            columns:
+              - column:
+                  name: seller_amount
+                  type: decimal(15, 2)
+
+  - changeSet:
+      id: 019-add-created-at
+      author: eliteshop
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: payment_info
+                columnName: created_at
+      changes:
+        - addColumn:
+            tableName: payment_info
+            columns:
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: current_timestamp
+
+  - changeSet:
+      id: 019-add-updated-at
+      author: eliteshop
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: payment_info
+                columnName: updated_at
+      changes:
+        - addColumn:
+            tableName: payment_info
+            columns:
+              - column:
+                  name: updated_at
+                  type: timestamp
+                  defaultValueComputed: current_timestamp
+
+  - changeSet:
+      id: 019-fix-payment-method-type
+      author: eliteshop
+      comment: "Corrige payment_method: VARCHAR(150) NOT NULL -> VARCHAR(50) nullable"
+      preConditions:
+        - onFail: MARK_RAN
+        - columnExists:
+            tableName: payment_info
+            columnName: payment_method
+      changes:
+        - modifyDataType:
+            tableName: payment_info
+            columnName: payment_method
+            newDataType: varchar(50)
+        - dropNotNullConstraint:
+            tableName: payment_info
+            columnName: payment_method
+
+  - changeSet:
+      id: 019-add-seller-fk
+      author: eliteshop
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - foreignKeyConstraintExists:
+                foreignKeyName: fk_payment_info_seller
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: payment_info
+            baseColumnNames: seller_id
+            referencedTableName: seller
+            referencedColumnNames: seller_id
+            constraintName: fk_payment_info_seller
+            onDelete: SET NULL
+
+  - changeSet:
+      id: 019-add-unique-constraints
+      author: eliteshop
+      comment: Agrega unique constraints en session_id, invoice, epayco_ref_id
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - uniqueConstraintExists:
+                constraintName: uq_payment_session_id
+                tableName: payment_info
+      changes:
+        - addUniqueConstraint:
+            tableName: payment_info
+            columnNames: session_id
+            constraintName: uq_payment_session_id
+        - addUniqueConstraint:
+            tableName: payment_info
+            columnNames: invoice
+            constraintName: uq_payment_invoice
+        - addUniqueConstraint:
+            tableName: payment_info
+            columnNames: epayco_ref_id
+            constraintName: uq_payment_epayco_ref_id
+
+  - changeSet:
+      id: 019-add-indexes
+      author: eliteshop
+      comment: Agrega índices para búsquedas frecuentes
+      changes:
+        - createIndex:
+            tableName: payment_info
+            indexName: idx_payment_order_id
+            columns:
+              - column:
+                  name: order_id
+        - createIndex:
+            tableName: payment_info
+            indexName: idx_payment_epayco_ref_id
+            columns:
+              - column:
+                  name: epayco_ref_id
+        - createIndex:
+            tableName: payment_info
+            indexName: idx_payment_session_id
+            columns:
+              - column:
+                  name: session_id
+        - createIndex:
+            tableName: payment_info
+            indexName: idx_payment_customer_email
+            columns:
+              - column:
+                  name: customer_email
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - indexExists:
+                tableName: payment_info
+                indexName: idx_payment_order_id

@@ -18,13 +18,13 @@ public class NotificationBeanConfiguration {
 
   @Bean
   public SendNotificationUseCase sendNotificationUseCase(
-          NotificationPort notificationPort, SlackMessageRepository repository) {
+      NotificationPort notificationPort, SlackMessageRepository repository) {
     return new SendNotificationUseCase(notificationPort, repository);
   }
 
   @Bean
   public RetryPendingNotificationsUseCase retryPendingNotificationsUseCase(
-          SlackMessageRepository repository, NotificationPort notificationPort) {
+      SlackMessageRepository repository, NotificationPort notificationPort) {
     return new RetryPendingNotificationsUseCase(repository, notificationPort);
   }
 }

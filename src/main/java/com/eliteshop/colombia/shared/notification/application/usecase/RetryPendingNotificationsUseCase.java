@@ -8,7 +8,9 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @RequiredArgsConstructor
 public class RetryPendingNotificationsUseCase {
 
@@ -16,6 +18,7 @@ public class RetryPendingNotificationsUseCase {
   private final NotificationPort notificationPort;
 
   public void execute() {
+    log.info("Reintentando notificaciones pendientes");
     List<SlackMessage> pending = repository.findByStatus("PENDING");
 
     for (SlackMessage message : pending) {
@@ -27,10 +30,13 @@ public class RetryPendingNotificationsUseCase {
       try {
         notificationPort.send(message);
         repository.updateStatus(message.id(), "SENT");
+        log.info("Notificación {} enviada exitosamente", message.id());
       } catch (NotificationFailedException e) {
         Instant nextRetry = Instant.now().plus(1, ChronoUnit.MINUTES);
         repository.incrementRetryCount(message.id(), nextRetry.toString());
+        log.error("Error al reintentar notificación {}: {}", message.id(), e.getMessage());
       }
     }
+    log.info("Reintento de notificaciones completado. Total pendientes: {}", pending.size());
   }
 }

@@ -1,9 +1,9 @@
 package com.eliteshop.colombia.seller.infrastructure.adapter;
 
+import com.eliteshop.colombia.seller.infrastructure.config.FaceMatcherProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -12,9 +12,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 public class FaceMatcherAdapter {
 
   private final WebClient sellerVerificationWebClient;
-
-  @Value("${face-matcher.url:http://face-matcher:5000}")
-  private String faceMatcherUrl;
+  private final FaceMatcherProperties faceMatcherProperties;
 
   public FaceMatchResult match(String selfieObject, String documentObject) {
     Map<String, String> request =
@@ -22,7 +20,7 @@ public class FaceMatcherAdapter {
 
     return sellerVerificationWebClient
         .post()
-        .uri(faceMatcherUrl + "/match")
+        .uri(faceMatcherProperties.getUrl() + "/match")
         .bodyValue(request)
         .retrieve()
         .bodyToMono(FaceMatchResult.class)

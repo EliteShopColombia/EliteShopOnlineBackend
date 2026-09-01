@@ -49,6 +49,7 @@ public class SellerMapper {
         new SellerIsVerified(entity.getIsVerified()),
         new SellerCreatedAt(entity.getCreatedAt()),
         entity.getUpdatedAt() != null ? new SellerUpdatedAt(entity.getUpdatedAt()) : null,
+        entity.getProfileImage() != null ? new SellerProfileImage(entity.getProfileImage()) : null,
         contact,
         bankInfo);
   }
@@ -68,6 +69,9 @@ public class SellerMapper {
     entity.setCreatedAt(domain.getCreatedAt().getValue());
     if (domain.getUpdatedAt() != null) {
       entity.setUpdatedAt(domain.getUpdatedAt().getValue());
+    }
+    if (domain.getProfileImage() != null) {
+      entity.setProfileImage(domain.getProfileImage().getValue());
     }
 
     if (domain.getContact() != null) {
@@ -127,6 +131,7 @@ public class SellerMapper {
         new SellerIsVerified(false),
         new SellerCreatedAt(Timestamp.from(Instant.now())),
         null,
+        null,
         contact,
         bankInfo);
   }
@@ -176,6 +181,9 @@ public class SellerMapper {
     response.setCreatedAt(domain.getCreatedAt().getValue());
     if (domain.getUpdatedAt() != null) {
       response.setUpdatedAt(domain.getUpdatedAt().getValue());
+    }
+    if (domain.getProfileImage() != null) {
+      response.setProfileImage(domain.getProfileImage().getValue());
     }
 
     return response;

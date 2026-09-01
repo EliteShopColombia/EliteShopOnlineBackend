@@ -6,5 +6,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Getter
 public class ReviewImage {
-  private final String value;
+  private final ReviewImageId id;
+  private final ReviewId reviewId;
+  private final ReviewImageUrl imageUrl;
+  private final ReviewImageOrder order;
 }

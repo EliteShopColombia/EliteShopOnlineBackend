@@ -4,9 +4,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface SellerVerificationRepository {
-    SellerVerification save(SellerVerification verification);
+  SellerVerification save(SellerVerification verification);
 
-    Optional<SellerVerification> findById(SellerVerificationId id);
+  Optional<SellerVerification> findById(SellerVerificationId id);
 
-    Optional<SellerVerification> findBySellerId(UUID sellerId);
+  Optional<SellerVerification> findBySellerId(UUID sellerId);
 }

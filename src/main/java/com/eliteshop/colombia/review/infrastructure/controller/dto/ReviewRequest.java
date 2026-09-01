@@ -18,6 +18,4 @@ public class ReviewRequest {
   private Integer qualify;
 
   private String content;
-
-  private String image;
 }

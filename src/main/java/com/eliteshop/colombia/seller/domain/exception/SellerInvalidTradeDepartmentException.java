@@ -5,7 +5,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 
 @ResponseStatus(value = HttpStatus.BAD_REQUEST)
 public class SellerInvalidTradeDepartmentException extends RuntimeException {
-    public SellerInvalidTradeDepartmentException(String message) {
-        super(message);
-    }
+  public SellerInvalidTradeDepartmentException(String message) {
+    super(message);
+  }
 }

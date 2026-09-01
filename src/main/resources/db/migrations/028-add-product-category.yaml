@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - changeSet:
+      id: 028-add-product-category
+      author: eliteshop
+      changes:
+        - addColumn:
+            tableName: product
+            columns:
+              - column:
+                  name: product_category
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: true

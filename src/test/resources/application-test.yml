@@ -1,0 +1,100 @@
+spring:
+  config:
+    activate:
+      on-profile: test
+  cloud:
+    config:
+      enabled: false
+      fail-fast: false
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchClientAutoConfiguration
+  mail:
+    host: localhost
+    port: 25
+    username: test
+    password: test
+  properties:
+    hibernate:
+      query.timeout: 5000
+    jakarta:
+      persistence:
+        query:
+          timeout: 5000
+  datasource:
+    url: "jdbc:h2:mem:testdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1"
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+  h2:
+    console:
+      enabled: false
+  liquibase:
+    enabled: false
+
+jwt:
+  secret: "dGVzdC1zZWNyZXQta2V5LWZvci11bml0LXRlc3RzLW9ubHktMzJjaGFycyE="
+  expiration: 86400000
+  issuer: "eliteshop-test"
+
+minio:
+  endpoint: "http://localhost:9000"
+  access-key: "test-access-key"
+  secret-key: "test-secret-key"
+  bucket:
+    verification-sellers: "test-verification"
+    verification-sellers-test: "test-verification"
+    product-images: "test-product-images"
+    product-images-test: "test-product-images"
+    review-images: "test-review-images"
+    review-images-test: "test-review-images"
+    customer-avatars: "test-customer-avatars"
+    customer-avatars-test: "test-customer-avatars"
+    business-avatars: "test-business-avatars"
+    business-avatars-test: "test-business-avatars"
+
+face-matcher:
+  url: "http://localhost:8081"
+
+payments:
+  epayco:
+    public-key: "test-public-key"
+    private-key: "test-private-key"
+    apify-base-url: "https://test.epayco.co"
+    environment: "sandbox"
+
+gateway:
+  url: "http://localhost:3000"
+  secret: "test-webhook-secret"
+
+github:
+  webhook:
+    secret: "test-github-secret"
+    enabled: false
+
+slack:
+  enabled: false
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      slack:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        permittedNumberOfCallsInHalfOpenState: 3
+        waitDurationInOpenState: 10s
+  retry:
+    instances:
+      slack:
+        maxAttempts: 3
+        waitDuration: 500ms
+  timelimiter:
+    instances:
+      slack:
+        timeoutDuration: 3s
