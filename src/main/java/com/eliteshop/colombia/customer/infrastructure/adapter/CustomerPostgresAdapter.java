@@ -67,7 +67,7 @@ public class CustomerPostgresAdapter implements CustomerRepository {
     var pageable =
         org.springframework.data.domain.PageRequest.of(
             page, size, org.springframework.data.domain.Sort.by("createdAt").descending());
-    var result = jpaRepository.findAll(pageable);
+    var result = jpaRepository.findAllWithInfo(pageable);
     List<Customer> customers =
         result.getContent().stream().map(mapper::toDomain).collect(Collectors.toList());
     return com.eliteshop.colombia.shared.domain.PageResult.of(
@@ -76,7 +76,7 @@ public class CustomerPostgresAdapter implements CustomerRepository {
 
   @Override
   public Optional<Customer> findById(CustomerId id) {
-    return jpaRepository.findById(id.getValue()).map(mapper::toDomain);
+    return jpaRepository.findByIdWithInfo(id.getValue()).map(mapper::toDomain);
   }
 
   @Override
