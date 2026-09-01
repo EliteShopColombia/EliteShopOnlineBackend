@@ -73,5 +73,6 @@ skills-lock.json
 *.mv.db
 PLAN_Q4_JAVADOC.md
 PLAN_CORRECCION_DEUDA_TECNICA.md
-CAMBIOS.md
+Cambios.md
+Changelog.md
 REPORTE_QA_VALIDACION_UBICACIONES.md
