@@ -2,4 +2,57 @@ spring:
   application:
     name: colombia
   config:
-    import: "optional:configserver:${CONFIG_SERVER_URI:http://100.123.31.18:8888}"
+    import: "optional:configserver:${CONFIG_SERVER_URI:http://localhost:8888}"
+  datasource:
+    url: jdbc:postgresql://localhost:5432/eliteshop
+    username: eliteshop
+    password: eliteshop
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  liquibase:
+    enabled: true
+
+jwt:
+  secret: ZGVmYXVsdC1zZWNyZXQta2V5LWZvci1sb2NhbC1kZXZlbG9wbWVudA==
+  expiration: 86400000
+  issuer: eliteshop-backend
+
+minio:
+  endpoint: http://localhost:9000
+  access-key: minioadmin
+  secret-key: minioadmin
+  bucket:
+    verification-sellers: verification-sellers
+    product-images: product-images
+    review-images: review-images
+    customer-avatars: customer-avatars
+    business-avatars: business-avatars
+
+face-matcher:
+  url: http://localhost:8081
+
+payments:
+  epayco:
+    public-key: test-public-key
+    private-key: test-private-key
+    apify-base-url: https://api.epayco.co
+    environment: sandbox
+
+gateway:
+  url: http://localhost:3000
+  secret: test-gateway-secret
+
+github:
+  webhook:
+    secret: test-webhook-secret
+    enabled: false
+
+slack:
+  enabled: false
+
+spring.mail:
+  host: localhost
+  port: 25
+  username: test
+  password: test

@@ -922,38 +922,144 @@ erDiagram
 
 ### Prerequisites
 
-- Java 21
-- Maven 3.9+
-- Docker & Docker Compose (for local database)
-- Spring Cloud Config Server running at `http://100.123.31.18:8888`
+| Dependency | Version | Notes |
+|---|---|---|
+| **Java** | 21+ | Required. Verify with `java -version` |
+| **Docker** | 24+ | Required for PostgreSQL |
+| **Docker Compose** | v2+ | Required for container orchestration |
 
-### Run Locally
+### Step 1 — Clone the Repository
 
 ```bash
-# Start PostgreSQL via Docker Compose
-docker compose up -d
+git clone https://github.com/your-org/EliteShopColombiaBackend.git
+cd EliteShopColombiaBackend
+```
 
-# Run the application
+### Step 2 — Start the Stack (PostgreSQL + Backend)
+
+```bash
+docker compose up -d
+```
+
+This command starts:
+
+| Service | Container | Port | Description |
+|---|---|---|---|
+| **postgres** | `eliteshop-postgres` | `5432` | PostgreSQL 15 with `uuid-ossp` extension pre-installed |
+| **backend** | `eliteshop-backend` | `8080` | Spring Boot application with `local` profile |
+
+The backend waits for PostgreSQL to be healthy before starting. Liquibase runs automatically and creates/migrates the schema.
+
+### Step 3 — Verify the Application
+
+```bash
+# Health check
+curl http://localhost:8080/actuator/health
+
+# Swagger UI
+open http://localhost:8080/swagger-ui/index.html
+
+# Create a test customer
+curl -X POST http://localhost:8080/api/v1/customers \
+  -H "Content-Type: application/json" \
+  -d '{
+    "firstName": "Juan",
+    "lastName": "Perez",
+    "email": "juan@example.com",
+    "phoneNumber": "3001234567",
+    "password": "Password123"
+  }'
+```
+
+### Running Without Docker Compose
+
+If you prefer to run services individually:
+
+```bash
+# 1. Start PostgreSQL manually (must create uuid-ossp extension first)
+docker run -d \
+  --name eliteshop-postgres \
+  -e POSTGRES_DB=eliteshop \
+  -e POSTGRES_USER=eliteshop \
+  -e POSTGRES_PASSWORD=eliteshop \
+  -p 5432:5432 \
+  postgres:15-alpine
+
+# 2. Create the uuid-ossp extension (required by migration 017)
+docker exec eliteshop-postgres psql -U eliteshop -d eliteshop -c 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'
+
+# 3. Run the application with local profile
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
-The application starts on **port 8080** by default.
+### Configuration — Local Profile
 
-### Run with Maven
+The `local` profile (`application-local.yml`) includes **all required properties** with dummy values so the app starts without a Config Server. The 8 mandatory properties are:
+
+| Property | Value (local) | Why required |
+|---|---|---|
+| `jwt.secret` | Base64 dummy key | `@NotBlank` in `JwtProperties` |
+| `minio.endpoint` | `http://localhost:9000` | `@NotBlank` in `MinIOProperties` |
+| `minio.access-key` | `minioadmin` | `@NotBlank` in `MinIOProperties` |
+| `minio.secret-key` | `minioadmin` | `@NotBlank` in `MinIOProperties` |
+| `face-matcher.url` | `http://localhost:8081` | `@NotBlank` in `FaceMatcherProperties` |
+| `payments.epayco.public-key` | `test-public-key` | `@NotBlank` in `EpaycoProperties` |
+| `payments.epayco.private-key` | `test-private-key` | `@NotBlank` in `EpaycoProperties` |
+| `payments.epayco.apify-base-url` | `https://api.epayco.co` | `@NotBlank` in `EpaycoProperties`
+
+> **Note:** The `local` profile imports Config Server as `optional:`. If a Config Server is available, it overrides these values. Otherwise, the local values are used.
+
+### (Optional) Start Supporting Services
+
+<details>
+<summary><strong>MinIO — Object Storage</strong></summary>
+
+```bash
+docker run -d \
+  --name eliteshop-minio \
+  -p 9000:9000 \
+  -p 9001:9001 \
+  -e MINIO_ROOT_USER=minioadmin \
+  -e MINIO_ROOT_PASSWORD=minioadmin \
+  minio/minio server /data --console-address ":9001"
+```
+
+Create the required buckets via the web console at `http://localhost:9001`:
+- `verification-sellers`
+- `product-images`
+- `review-images`
+- `customer-avatars`
+- `business-avatars`
+</details>
+
+### Development Commands
 
 ```bash
 # Compile
 ./mvnw compile
 
-# Run tests
+# Run all tests (357 tests)
 ./mvnw test
 
-# Format code
+# Run a specific test class
+./mvnw test -Dtest=CustomerSaveUseCaseTest
+
+# Format code (Google Java Format — must pass before commit)
 ./mvnw spotless:apply
+
+# Check formatting
+./mvnw spotless:check
 
 # Package
 ./mvnw package
+
+# Start app locally (without Docker)
+./mvnw spring-boot:run -Dspring-boot.run.profiles=local
 ```
+
+### Environment Variables
+
+An `.env.example` file is provided. **You do NOT need it for local development** — all properties are pre-configured in `application-local.yml`. Only create a `.env` file if you need to override values with real credentials for external services (MinIO, ePayco, Slack, etc.).
 
 ---
 
