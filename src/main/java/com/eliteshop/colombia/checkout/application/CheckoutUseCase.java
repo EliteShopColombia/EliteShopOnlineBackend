@@ -348,7 +348,8 @@ public class CheckoutUseCase {
         || request.cvv == null
         || request.cvv.isBlank()) {
       return Mono.error(
-          new InsufficientStockException("Datos de tarjeta incompletos para nueva tarjeta"));
+          new com.eliteshop.colombia.checkout.domain.exception.InvalidCardDataException(
+              "Datos de tarjeta incompletos para nueva tarjeta"));
     }
 
     return paymentGateway

@@ -6,12 +6,20 @@ services:
     container_name: eliteshop-backend
     expose:
       - "8080"
-    networks:
-      - eliteshopcolombiabackend_default
     environment:
       SPRING_PROFILES_ACTIVE: dev
+      # El backend obtiene toda su configuración del servidor de configuración
+      # (ms-config-server), que descifra los secretos ENC(...) con AES-256-GCM.
+      CONFIG_SERVER_URI: http://config-server:8888
+    networks:
+      - eliteshopcolombiabackend_default
+      # Red de datos: aquí viven Postgres y MinIO. Sin ella el backend no puede
+      # alcanzar la base de datos ni el almacenamiento de objetos.
+      - eliteshopcolombia_app_network
     restart: unless-stopped
 
 networks:
   eliteshopcolombiabackend_default:
+    external: true
+  eliteshopcolombia_app_network:
     external: true

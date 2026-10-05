@@ -162,6 +162,15 @@ public class GlobalExceptionHandler {
     return conflict("Stock insuficiente", "INSUFFICIENT_STOCK");
   }
 
+  /** Datos de tarjeta inválidos: es un error del cliente (400), no un conflicto de stock. */
+  @ExceptionHandler(
+      com.eliteshop.colombia.checkout.domain.exception.InvalidCardDataException.class)
+  public ResponseEntity<ErrorResponse> handleInvalidCardData(
+      com.eliteshop.colombia.checkout.domain.exception.InvalidCardDataException ex) {
+    log.warn("Datos de tarjeta invalidos: {}", ex.getMessage());
+    return badRequest(ex.getMessage(), "INVALID_CARD_DATA");
+  }
+
   @ExceptionHandler(com.eliteshop.colombia.checkout.domain.exception.EmptyCartException.class)
   public ResponseEntity<ErrorResponse> handleEmptyCart(
       com.eliteshop.colombia.checkout.domain.exception.EmptyCartException ex) {

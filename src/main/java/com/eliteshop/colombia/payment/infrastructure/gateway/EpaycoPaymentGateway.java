@@ -169,7 +169,24 @@ public class EpaycoPaymentGateway implements PaymentGateway {
                             response.getCard().getName(),
                             Integer.parseInt(response.getCard().getExpMonth()),
                             Integer.parseInt(response.getCard().getExpYear()));
-                      });
+                      })
+                  // Un 400 de ePayco al tokenizar significa que la tarjeta no es
+                  // válida: es un error del cliente (400), no un fallo interno.
+                  // Sin este mapeo la excepción subía cruda y devolvía 500.
+                  .onErrorMap(
+                      org.springframework.web.reactive.function.client
+                              .WebClientResponseException.BadRequest
+                          .class,
+                      e ->
+                          new com.eliteshop.colombia.checkout.domain.exception
+                              .InvalidCardDataException("La tarjeta no es válida o fue rechazada"))
+                  .onErrorMap(
+                      org.springframework.web.reactive.function.client.WebClientResponseException
+                          .class,
+                      e ->
+                          new com.eliteshop.colombia.payment.domain.exception
+                              .PaymentGatewayException(
+                              "Error de la pasarela al tokenizar la tarjeta", e));
             });
   }
 

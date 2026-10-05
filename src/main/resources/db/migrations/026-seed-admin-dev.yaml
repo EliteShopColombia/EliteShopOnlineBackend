@@ -5,6 +5,7 @@ databaseChangeLog:
       # Solo en desarrollo: crea un admin de pruebas. Nunca debe ejecutarse en
       # producción (antes corría en todos los entornos por no declarar context).
       context: dev
+      validCheckSum: "9:285e9af084a5cd7296b76a7b24442e52"
       changes:
         - sql:
             sql: |
