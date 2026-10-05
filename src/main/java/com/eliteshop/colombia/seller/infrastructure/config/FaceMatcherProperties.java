@@ -12,4 +12,10 @@ public class FaceMatcherProperties {
 
   @NotBlank(message = "face-matcher.url es requerido")
   private String url;
+
+  /**
+   * Secreto compartido que se envía en la cabecera {@code X-Gateway-Secret}. El microservicio
+   * face-matcher lo exige para todos los endpoints salvo /health.
+   */
+  private String secret;
 }

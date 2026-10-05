@@ -26,7 +26,8 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class SellerVerificationController {
 
-  private static final Set<String> ALLOWED_TYPES = Set.of("image/jpeg", "image/png");
+  private static final Set<String> ALLOWED_TYPES =
+      Set.of("image/jpeg", "image/png", "image/jpg", "application/octet-stream");
   private static final long MAX_SIZE = 5 * 1024 * 1024;
 
   private final VerifySellerUseCase verifySellerUseCase;
@@ -76,8 +77,64 @@ public class SellerVerificationController {
     }
   }
 
+  /**
+   * Endpoint de validación asincrónica. Envía la tarea al microservicio y retorna inmediatamente
+   * con el task_id. El polling se ejecuta en un hilo separado del executor dedicado.
+   */
   @PostMapping("/validate")
   public ResponseEntity<Map<String, String>> validate(
+      @PathVariable UUID sellerId,
+      Authentication authentication,
+      jakarta.servlet.http.HttpServletRequest request) {
+    requireSellerAccess(sellerId, authentication, request);
+
+    SellerVerification verification = verifySellerUseCase.submitVerification(sellerId);
+
+    // Launch async polling in background thread
+    runPollingAsync(sellerId);
+
+    return ResponseEntity.accepted()
+        .body(
+            Map.of(
+                "status",
+                "PROCESSING",
+                "taskId",
+                verification.getTaskId().getValue(),
+                "message",
+                "Verificación en proceso. Consulta GET /verification para el resultado"));
+  }
+
+  /**
+   * Consulta el estado de la verificación. Si la verificación está en estado PROCESSING, consulta
+   * el microservicio para obtener el resultado actualizado.
+   */
+  @GetMapping
+  public ResponseEntity<SellerVerificationResponse> getStatus(
+      @PathVariable UUID sellerId,
+      Authentication authentication,
+      jakarta.servlet.http.HttpServletRequest request) {
+    requireSellerAccess(sellerId, authentication, request);
+
+    SellerVerification verification = verifySellerUseCase.getStatus(sellerId);
+
+    // If still processing, try to poll the result
+    if ("PROCESSING".equals(verification.getStatus().getValue())
+        && verification.getTaskId() != null) {
+      try {
+        verification = verifySellerUseCase.pollVerificationResult(sellerId);
+      } catch (Exception e) {
+        log.warn("No se pudo consultar resultado para sellerId={}: {}", sellerId, e.getMessage());
+      }
+    }
+
+    return ResponseEntity.ok(mapper.toResponse(verification));
+  }
+
+  // ==================== Legacy endpoint ====================
+
+  /** Endpoint síncrono legacy para compatibilidad hacia atrás. */
+  @PostMapping("/validate-legacy")
+  public ResponseEntity<Map<String, String>> validateLegacy(
       @PathVariable UUID sellerId,
       Authentication authentication,
       jakarta.servlet.http.HttpServletRequest request) {
@@ -89,38 +146,58 @@ public class SellerVerificationController {
           "Primero sube la cedula y la selfie");
     }
 
-    runValidationAsync(sellerId);
+    runValidationLegacyAsync(sellerId);
 
     return ResponseEntity.accepted()
         .body(
             Map.of(
-                "status", "PROCESSING",
+                "status",
+                "PROCESSING",
                 "message",
-                    "Verificación en proceso. Consulta GET /verification para el resultado"));
+                "Verificación en proceso. Consulta GET /verification para el resultado"));
   }
 
-  private void runValidationAsync(UUID sellerId) {
+  // ==================== Async executors ====================
+
+  private void runPollingAsync(UUID sellerId) {
     sellerVerificationExecutor.execute(
         () -> {
           try {
-            log.info("Iniciando validacion asincrona para sellerId={}", sellerId);
-            verifySellerUseCase.validate(sellerId);
-            log.info("Validacion completada para sellerId={}", sellerId);
+            log.info("Iniciando polling de verificación para sellerId={}", sellerId);
+            SellerVerification result = verifySellerUseCase.pollWithRetries(sellerId);
+            if (result != null) {
+              log.info(
+                  "Polling completado para sellerId={}, status={}",
+                  sellerId,
+                  result.getStatus().getValue());
+            } else {
+              log.warn("Polling no obtuvo resultado final para sellerId={}", sellerId);
+            }
           } catch (Exception e) {
             log.error(
-                "Error en validacion asincrona para sellerId={}: {}", sellerId, e.getMessage(), e);
+                "Error en polling de verificación para sellerId={}: {}",
+                sellerId,
+                e.getMessage(),
+                e);
           }
         });
   }
 
-  @GetMapping
-  public ResponseEntity<SellerVerificationResponse> getStatus(
-      @PathVariable UUID sellerId,
-      Authentication authentication,
-      jakarta.servlet.http.HttpServletRequest request) {
-    requireSellerAccess(sellerId, authentication, request);
-    SellerVerification verification = verifySellerUseCase.getStatus(sellerId);
-    return ResponseEntity.ok(mapper.toResponse(verification));
+  private void runValidationLegacyAsync(UUID sellerId) {
+    sellerVerificationExecutor.execute(
+        () -> {
+          try {
+            log.info("Iniciando validacion asincrona (legacy) para sellerId={}", sellerId);
+            verifySellerUseCase.validate(sellerId);
+            log.info("Validacion completada (legacy) para sellerId={}", sellerId);
+          } catch (Exception e) {
+            log.error(
+                "Error en validacion asincrona (legacy) para sellerId={}: {}",
+                sellerId,
+                e.getMessage(),
+                e);
+          }
+        });
   }
 
   private void requireSellerAccess(

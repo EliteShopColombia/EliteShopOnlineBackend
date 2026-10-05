@@ -20,6 +20,12 @@ public class SellerVerification {
   private final SellerVerificationRejectionReason rejectionReason;
   @NonNull private final SellerVerificationCreatedAt createdAt;
   private final SellerVerificationUpdatedAt updatedAt;
+  // Async verification fields
+  private final SellerVerificationTaskId taskId;
+  private final SellerVerificationLivenessConfidence livenessConfidence;
+  private final SellerVerificationAntispoofScore antispoofScore;
+  private final SellerVerificationOcrCedulaNumber ocrCedulaNumber;
+  private final SellerVerificationOcrCedulaName ocrCedulaName;
 
   public static SellerVerification create(SellerVerificationSellerId sellerId) {
     return new SellerVerification(
@@ -34,6 +40,11 @@ public class SellerVerification {
         null,
         null,
         new SellerVerificationCreatedAt(Instant.now()),
+        null,
+        null,
+        null,
+        null,
+        null,
         null);
   }
 
@@ -52,7 +63,12 @@ public class SellerVerification {
         this.confidenceScore,
         this.rejectionReason,
         this.createdAt,
-        new SellerVerificationUpdatedAt(Instant.now()));
+        new SellerVerificationUpdatedAt(Instant.now()),
+        this.taskId,
+        this.livenessConfidence,
+        this.antispoofScore,
+        this.ocrCedulaNumber,
+        this.ocrCedulaName);
   }
 
   public SellerVerification withSelfieUploaded(SellerVerificationSelfieMinioKey selfieMinioKey) {
@@ -68,7 +84,36 @@ public class SellerVerification {
         this.confidenceScore,
         this.rejectionReason,
         this.createdAt,
-        new SellerVerificationUpdatedAt(Instant.now()));
+        new SellerVerificationUpdatedAt(Instant.now()),
+        this.taskId,
+        this.livenessConfidence,
+        this.antispoofScore,
+        this.ocrCedulaNumber,
+        this.ocrCedulaName);
+  }
+
+  /**
+   * Transición a estado PROCESSING: la tarea fue enviada al microservicio y se obtuvo un task_id.
+   */
+  public SellerVerification withProcessing(SellerVerificationTaskId taskId) {
+    return new SellerVerification(
+        this.id,
+        this.sellerId,
+        this.verificationType,
+        this.documentType,
+        this.documentNumber,
+        this.documentMinioKey,
+        this.selfieMinioKey,
+        SellerVerificationStatus.processing(),
+        this.confidenceScore,
+        this.rejectionReason,
+        this.createdAt,
+        new SellerVerificationUpdatedAt(Instant.now()),
+        taskId,
+        this.livenessConfidence,
+        this.antispoofScore,
+        this.ocrCedulaNumber,
+        this.ocrCedulaName);
   }
 
   public SellerVerification approved(SellerVerificationConfidenceScore confidenceScore) {
@@ -84,10 +129,17 @@ public class SellerVerification {
         confidenceScore,
         null,
         this.createdAt,
-        new SellerVerificationUpdatedAt(Instant.now()));
+        new SellerVerificationUpdatedAt(Instant.now()),
+        this.taskId,
+        this.livenessConfidence,
+        this.antispoofScore,
+        this.ocrCedulaNumber,
+        this.ocrCedulaName);
   }
 
-  public SellerVerification rejected(SellerVerificationRejectionReason rejectionReason) {
+  public SellerVerification rejected(
+      SellerVerificationConfidenceScore confidenceScore,
+      SellerVerificationRejectionReason rejectionReason) {
     return new SellerVerification(
         this.id,
         this.sellerId,
@@ -97,9 +149,44 @@ public class SellerVerification {
         this.documentMinioKey,
         this.selfieMinioKey,
         SellerVerificationStatus.rejected(),
-        this.confidenceScore,
+        confidenceScore,
         rejectionReason,
         this.createdAt,
-        new SellerVerificationUpdatedAt(Instant.now()));
+        new SellerVerificationUpdatedAt(Instant.now()),
+        this.taskId,
+        this.livenessConfidence,
+        this.antispoofScore,
+        this.ocrCedulaNumber,
+        this.ocrCedulaName);
+  }
+
+  /**
+   * Resultado final del microservicio con todas las métricas detalladas (OCR, liveness,
+   * anti-spoofing).
+   */
+  public SellerVerification withDetailedResult(
+      SellerVerificationConfidenceScore confidenceScore,
+      SellerVerificationLivenessConfidence livenessConfidence,
+      SellerVerificationAntispoofScore antispoofScore,
+      SellerVerificationOcrCedulaNumber ocrCedulaNumber,
+      SellerVerificationOcrCedulaName ocrCedulaName) {
+    return new SellerVerification(
+        this.id,
+        this.sellerId,
+        this.verificationType,
+        this.documentType,
+        this.documentNumber,
+        this.documentMinioKey,
+        this.selfieMinioKey,
+        this.status,
+        confidenceScore,
+        this.rejectionReason,
+        this.createdAt,
+        new SellerVerificationUpdatedAt(Instant.now()),
+        this.taskId,
+        livenessConfidence,
+        antispoofScore,
+        ocrCedulaNumber,
+        ocrCedulaName);
   }
 }

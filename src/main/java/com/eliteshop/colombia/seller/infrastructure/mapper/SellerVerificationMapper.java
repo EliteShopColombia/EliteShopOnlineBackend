@@ -1,16 +1,21 @@
 package com.eliteshop.colombia.seller.infrastructure.mapper;
 
 import com.eliteshop.colombia.seller.domain.model.verification.SellerVerification;
+import com.eliteshop.colombia.seller.domain.model.verification.SellerVerificationAntispoofScore;
 import com.eliteshop.colombia.seller.domain.model.verification.SellerVerificationConfidenceScore;
 import com.eliteshop.colombia.seller.domain.model.verification.SellerVerificationCreatedAt;
 import com.eliteshop.colombia.seller.domain.model.verification.SellerVerificationDocumentMinioKey;
 import com.eliteshop.colombia.seller.domain.model.verification.SellerVerificationDocumentNumber;
 import com.eliteshop.colombia.seller.domain.model.verification.SellerVerificationDocumentType;
 import com.eliteshop.colombia.seller.domain.model.verification.SellerVerificationId;
+import com.eliteshop.colombia.seller.domain.model.verification.SellerVerificationLivenessConfidence;
+import com.eliteshop.colombia.seller.domain.model.verification.SellerVerificationOcrCedulaName;
+import com.eliteshop.colombia.seller.domain.model.verification.SellerVerificationOcrCedulaNumber;
 import com.eliteshop.colombia.seller.domain.model.verification.SellerVerificationRejectionReason;
 import com.eliteshop.colombia.seller.domain.model.verification.SellerVerificationSelfieMinioKey;
 import com.eliteshop.colombia.seller.domain.model.verification.SellerVerificationSellerId;
 import com.eliteshop.colombia.seller.domain.model.verification.SellerVerificationStatus;
+import com.eliteshop.colombia.seller.domain.model.verification.SellerVerificationTaskId;
 import com.eliteshop.colombia.seller.domain.model.verification.SellerVerificationType;
 import com.eliteshop.colombia.seller.domain.model.verification.SellerVerificationUpdatedAt;
 import com.eliteshop.colombia.seller.infrastructure.persistence.SellerVerificationEntity;
@@ -44,6 +49,19 @@ public class SellerVerificationMapper {
         new SellerVerificationCreatedAt(entity.getCreatedAt()),
         entity.getUpdatedAt() != null
             ? new SellerVerificationUpdatedAt(entity.getUpdatedAt())
+            : null,
+        entity.getTaskId() != null ? new SellerVerificationTaskId(entity.getTaskId()) : null,
+        entity.getLivenessConfidence() != null
+            ? new SellerVerificationLivenessConfidence(entity.getLivenessConfidence())
+            : null,
+        entity.getAntispoofScore() != null
+            ? new SellerVerificationAntispoofScore(entity.getAntispoofScore())
+            : null,
+        entity.getOcrCedulaNumber() != null
+            ? new SellerVerificationOcrCedulaNumber(entity.getOcrCedulaNumber())
+            : null,
+        entity.getOcrCedulaName() != null
+            ? new SellerVerificationOcrCedulaName(entity.getOcrCedulaName())
             : null);
   }
 
@@ -66,6 +84,15 @@ public class SellerVerificationMapper {
         domain.getRejectionReason() != null ? domain.getRejectionReason().getValue() : null);
     entity.setCreatedAt(domain.getCreatedAt().getValue());
     entity.setUpdatedAt(domain.getUpdatedAt() != null ? domain.getUpdatedAt().getValue() : null);
+    entity.setTaskId(domain.getTaskId() != null ? domain.getTaskId().getValue() : null);
+    entity.setLivenessConfidence(
+        domain.getLivenessConfidence() != null ? domain.getLivenessConfidence().getValue() : null);
+    entity.setAntispoofScore(
+        domain.getAntispoofScore() != null ? domain.getAntispoofScore().getValue() : null);
+    entity.setOcrCedulaNumber(
+        domain.getOcrCedulaNumber() != null ? domain.getOcrCedulaNumber().getValue() : null);
+    entity.setOcrCedulaName(
+        domain.getOcrCedulaName() != null ? domain.getOcrCedulaName().getValue() : null);
     return entity;
   }
 }

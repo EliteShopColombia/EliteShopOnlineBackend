@@ -43,6 +43,12 @@ class LiquibaseMigrationTest {
   }
 
   @Test
+  void shouldHaveSellerVerificationTable() throws Exception {
+    Set<String> tables = fetchTableNames();
+    assertThat(tables).contains("seller_verification");
+  }
+
+  @Test
   void shouldExistWhenChangelogMasterFile() throws Exception {
     ClassPathResource resource = new ClassPathResource("db/changelog/db.changelog-master.yaml");
     assertThat(resource.exists()).isTrue();
@@ -68,6 +74,13 @@ class LiquibaseMigrationTest {
       "db/migrations/020-fix-constraints-and-indexes.yaml",
       "db/migrations/021-cleanup-and-extensions.yaml",
       "db/migrations/022-add-seller-profile-image.yaml",
+      "db/migrations/023-fix-department-dimensions-and-email-unique.yaml",
+      "db/migrations/024-add-bogota-city-alias.yaml",
+      "db/migrations/025-add-customer-role-and-admin-seed.yaml",
+      "db/migrations/026-seed-admin-dev.yaml",
+      "db/migrations/027-fix-admin-dev-password.yaml",
+      "db/migrations/028-add-product-category.yaml",
+      "db/migrations/029-add-verification-details.yaml",
     };
 
     for (String migration : expectedMigrations) {

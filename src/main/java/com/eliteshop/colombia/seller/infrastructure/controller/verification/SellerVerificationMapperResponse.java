@@ -19,6 +19,16 @@ public class SellerVerificationMapperResponse {
         domain.getRejectionReason() != null ? domain.getRejectionReason().getValue() : null);
     response.setCreatedAt(domain.getCreatedAt().getValue());
     response.setUpdatedAt(domain.getUpdatedAt() != null ? domain.getUpdatedAt().getValue() : null);
+    // Async fields
+    response.setTaskId(domain.getTaskId() != null ? domain.getTaskId().getValue() : null);
+    response.setLivenessConfidence(
+        domain.getLivenessConfidence() != null ? domain.getLivenessConfidence().getValue() : null);
+    response.setAntispoofScore(
+        domain.getAntispoofScore() != null ? domain.getAntispoofScore().getValue() : null);
+    response.setOcrCedulaNumber(
+        domain.getOcrCedulaNumber() != null ? domain.getOcrCedulaNumber().getValue() : null);
+    response.setOcrCedulaName(
+        domain.getOcrCedulaName() != null ? domain.getOcrCedulaName().getValue() : null);
     return response;
   }
 }

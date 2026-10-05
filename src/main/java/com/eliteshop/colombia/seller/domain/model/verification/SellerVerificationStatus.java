@@ -20,6 +20,10 @@ public class SellerVerificationStatus {
     return new SellerVerificationStatus("SELFIE_UPLOADED");
   }
 
+  public static SellerVerificationStatus processing() {
+    return new SellerVerificationStatus("PROCESSING");
+  }
+
   public static SellerVerificationStatus approved() {
     return new SellerVerificationStatus("APPROVED");
   }

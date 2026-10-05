@@ -17,4 +17,10 @@ public class SellerVerificationResponse {
   private String rejectionReason;
   private Instant createdAt;
   private Instant updatedAt;
+  // Async verification fields
+  private String taskId;
+  private Double livenessConfidence;
+  private Double antispoofScore;
+  private String ocrCedulaNumber;
+  private String ocrCedulaName;
 }

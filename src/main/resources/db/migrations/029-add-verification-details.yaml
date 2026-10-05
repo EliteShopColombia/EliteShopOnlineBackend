@@ -1,0 +1,30 @@
+databaseChangeLog:
+  - changeSet:
+      id: 029-add-verification-details
+      author: eliteshop
+      changes:
+        - addColumn:
+            tableName: seller_verification
+            columns:
+              - column:
+                  name: task_id
+                  type: VARCHAR(100)
+                  remarks: "ID de tarea devuelto por el microservicio de verificación asincrónico"
+              - column:
+                  name: liveness_confidence
+                  type: DECIMAL(5,4)
+                  remarks: "Score de confianza del liveness detection (0.0 - 1.0)"
+              - column:
+                  name: antispoof_score
+                  type: DECIMAL(5,4)
+                  remarks: "Score de detección anti-spoofing (0.0 - 1.0)"
+              - column:
+                  name: ocr_cedula_number
+                  type: VARCHAR(30)
+                  remarks: "Número de cédula extraído por OCR del documento"
+              - column:
+                  name: ocr_cedula_name
+                  type: VARCHAR(200)
+                  remarks: "Nombre completo extraído por OCR del documento"
+        - sql:
+            sql: "CREATE INDEX idx_seller_verification_task_id ON seller_verification (task_id)"

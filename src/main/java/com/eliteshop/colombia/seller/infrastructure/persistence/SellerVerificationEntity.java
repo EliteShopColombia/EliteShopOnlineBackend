@@ -51,4 +51,20 @@ public class SellerVerificationEntity {
 
   @Column(name = "updated_at")
   private Instant updatedAt;
+
+  // Async verification fields (migration 029)
+  @Column(name = "task_id", length = 100)
+  private String taskId;
+
+  @Column(name = "liveness_confidence")
+  private Double livenessConfidence;
+
+  @Column(name = "antispoof_score")
+  private Double antispoofScore;
+
+  @Column(name = "ocr_cedula_number", length = 30)
+  private String ocrCedulaNumber;
+
+  @Column(name = "ocr_cedula_name", length = 200)
+  private String ocrCedulaName;
 }
