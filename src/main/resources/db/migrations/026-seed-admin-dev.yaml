@@ -2,6 +2,9 @@ databaseChangeLog:
   - changeSet:
       id: 026-seed-admin-dev-user
       author: eliteshop
+      # Solo en desarrollo: crea un admin de pruebas. Nunca debe ejecutarse en
+      # producción (antes corría en todos los entornos por no declarar context).
+      context: dev
       changes:
         - sql:
             sql: |
@@ -12,7 +15,7 @@ databaseChangeLog:
                 'Dev',
                 'admin-dev@eliteshop.com',
                 '3009876543',
-                '$2a$10$RvlzvfUxIlKB/.uHuoT1o.rHa2wWrZrqxpEE4lJ3q2kzMfreNNUbe',
+                ${adminDevPasswordHash},
                 'admin',
                 CURRENT_TIMESTAMP
               )

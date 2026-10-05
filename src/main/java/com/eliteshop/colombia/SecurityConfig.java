@@ -44,8 +44,10 @@ public class SecurityConfig {
                         "/api/v1/webhooks/**",
                         "/api/v1/locations/**")
                     .permitAll()
+                    // El registro de vendedores exige una cuenta autenticada: el vendedor se
+                    // vincula siempre al customerId de la sesión (evita account takeover).
                     .requestMatchers(HttpMethod.POST, "/api/v1/sellers")
-                    .permitAll()
+                    .authenticated()
                     .requestMatchers(HttpMethod.GET, "/actuator/health", "/actuator/info")
                     .permitAll()
                     .requestMatchers(

@@ -54,6 +54,7 @@ public class CheckoutUseCase {
   private final SellerRepository sellerRepository;
   private final com.eliteshop.colombia.shared.domain.LocationValidationService
       locationValidationService;
+  private final OrderPersister orderPersister;
 
   public CheckoutResult execute(UUID customerId, CheckoutRequestFields request) {
     log.info("Iniciando checkout para cliente {}", customerId);
@@ -123,7 +124,7 @@ public class CheckoutUseCase {
     // 5. Persist everything atomically (transactional boundary)
     Order savedOrder;
     try {
-      savedOrder = persistOrderAndItems(customerId, cart, request, payment);
+      savedOrder = orderPersister.persistOrderAndItems(customerId, cart, request, payment);
     } catch (Exception e) {
       log.error(
           "Error persistiendo orden para cliente {}, invocando compensacion de pago", customerId);
@@ -158,44 +159,6 @@ public class CheckoutUseCase {
         cart.getTotal());
   }
 
-  @Transactional
-  protected Order persistOrderAndItems(
-      UUID customerId, Cart cart, CheckoutRequestFields request, Payment payment) {
-    // Build and save order
-    Order order = buildOrder(customerId, cart, request);
-    Order savedOrder = orderRepository.save(order);
-
-    // Build and save order items
-    List<OrderItem> orderItems =
-        cart.getItems().stream()
-            .map(item -> buildOrderItem(savedOrder.getId().getValue(), item))
-            .collect(Collectors.toList());
-    orderItemRepository.saveAll(orderItems);
-
-    // Associate payment with order and save
-    payment =
-        Payment.builder()
-            .id(payment.getId())
-            .orderId(savedOrder.getId().getValue())
-            .sellerId(payment.getSellerId())
-            .amount(payment.getAmount())
-            .currency(payment.getCurrency())
-            .method(payment.getMethod())
-            .status(payment.getStatus())
-            .epaycoRefId(payment.getEpaycoRefId())
-            .sessionId(payment.getSessionId())
-            .invoice(payment.getInvoice())
-            .customerEmail(payment.getCustomerEmail())
-            .createdAt(payment.getCreatedAt())
-            .updatedAt(payment.getUpdatedAt())
-            .platformFee(payment.getPlatformFee())
-            .sellerAmount(payment.getSellerAmount())
-            .build();
-    paymentRepository.save(payment);
-
-    return savedOrder;
-  }
-
   private void postPaymentActions(UUID customerId, Order savedOrder, Cart cart) {
     // Publish order created event
     eventPublisher.publishEvent(
@@ -207,10 +170,32 @@ public class CheckoutUseCase {
     // Confirm order (triggers status change event)
     orderUpdateUseCase.execute(buildConfirmedOrder(savedOrder));
 
-    // Reduce stock for each item
-    for (CartItem item : cart.getItems()) {
-      productRepository.reduceStock(
-          new ProductId(item.getProductId().getValue()), item.getQuantity().getValue());
+    // Reduce stock for each item. Se lleva la cuenta de lo efectivamente reducido:
+    // antes, si fallaba a mitad, la compensación restauraba TODOS los items —
+    // incluidos los que nunca se redujeron — inflando el stock.
+    List<CartItem> stockReduced = new java.util.ArrayList<>();
+    try {
+      for (CartItem item : cart.getItems()) {
+        productRepository.reduceStock(
+            new ProductId(item.getProductId().getValue()), item.getQuantity().getValue());
+        stockReduced.add(item);
+      }
+    } catch (Exception e) {
+      log.error(
+          "Fallo reduciendo stock tras el pago; restaurando {} items ya reducidos",
+          stockReduced.size());
+      for (CartItem item : stockReduced) {
+        try {
+          productRepository.restoreStock(
+              new ProductId(item.getProductId().getValue()), item.getQuantity().getValue());
+        } catch (Exception restoreError) {
+          log.error(
+              "No se pudo restaurar el stock del producto {}: {}",
+              item.getProductId().getValue(),
+              restoreError.getMessage());
+        }
+      }
+      throw e;
     }
 
     // Clear cart
@@ -324,6 +309,20 @@ public class CheckoutUseCase {
           paymentMethodRepository
               .findById(request.paymentMethodId)
               .orElseThrow(() -> new PaymentFailedException("Metodo de pago no encontrado"));
+
+      // El método guardado debe pertenecer al cliente que paga; si no, se estaría cobrando
+      // a la tarjeta de otro usuario (IDOR).
+      if (!method
+          .getCustomerId()
+          .getValue()
+          .equals(customer.getId().getValue())) {
+        log.warn(
+            "Intento de usar método de pago ajeno en checkout: paymentMethodId={}, customer={}",
+            request.paymentMethodId,
+            customer.getId().getValue());
+        return Mono.error(
+            new PaymentFailedException("El metodo de pago no pertenece al cliente"));
+      }
 
       return paymentGateway
           .chargeWithToken(

@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -26,13 +27,34 @@ public class CartPostgresAdapter implements CartRepository {
     CartEntity cartEntity = toCartEntity(cart);
     cartJpaRepository.save(cartEntity);
 
-    // Eliminar items existentes y guardar los nuevos
-    cartItemJpaRepository.deleteByCartId(cart.getId().getValue());
+    UUID cartId = cart.getId().getValue();
+    List<CartItemEntity> newItems =
+        cart.getItems() != null && !cart.getItems().isEmpty()
+            ? cart.getItems().stream().map(this::toCartItemEntity).collect(Collectors.toList())
+            : List.of();
 
-    if (cart.getItems() != null && !cart.getItems().isEmpty()) {
-      List<CartItemEntity> itemEntities =
-          cart.getItems().stream().map(this::toCartItemEntity).collect(Collectors.toList());
-      cartItemJpaRepository.saveAll(itemEntities);
+    // Antes se borraban TODOS los items y se reinsertaban. Con dos peticiones
+    // concurrentes eso perdía items (la segunda sobrescribía con su copia) y podía
+    // chocar con la clave primaria. Ahora se hace upsert y solo se eliminan los
+    // items que ya no están, dentro de una transacción, bloqueando las filas del
+    // carrito para serializar las escrituras.
+    cartItemJpaRepository.lockByCartId(cartId);
+
+    Set<UUID> keptIds =
+        newItems.stream().map(CartItemEntity::getId).collect(Collectors.toSet());
+    List<UUID> existingIds =
+        cartItemJpaRepository.findByCartId(cartId).stream()
+            .map(CartItemEntity::getId)
+            .collect(Collectors.toList());
+
+    List<UUID> toDelete =
+        existingIds.stream().filter(id -> !keptIds.contains(id)).collect(Collectors.toList());
+    if (!toDelete.isEmpty()) {
+      cartItemJpaRepository.deleteAllByIdInBatch(toDelete);
+    }
+
+    if (!newItems.isEmpty()) {
+      cartItemJpaRepository.saveAll(newItems);
     }
 
     return cart;

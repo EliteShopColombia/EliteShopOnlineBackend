@@ -43,9 +43,16 @@ public class SellerController {
   private final com.eliteshop.colombia.shared.security.AuthorizationService authorizationService;
 
   @PostMapping("/sellers")
-  public ResponseEntity<AuthResponse> save(@Valid @RequestBody SellerRequest request) {
+  public ResponseEntity<AuthResponse> save(
+      @Valid @RequestBody SellerRequest request,
+      Authentication authentication,
+      jakarta.servlet.http.HttpServletRequest httpRequest) {
+    authorizationService.requireRole(authentication, "ROLE_CUSTOMER");
+    UUID authenticatedCustomerId = authorizationService.authenticatedUserId(authentication);
+    String authenticatedEmail = (String) httpRequest.getAttribute("gateway.userEmail");
     Seller seller = mapper.toDomainFromRequest(request);
-    AuthResponse authResponse = registrationUseCase.execute(seller);
+    AuthResponse authResponse =
+        registrationUseCase.execute(seller, authenticatedCustomerId, authenticatedEmail);
     return ResponseEntity.status(HttpStatus.CREATED).body(authResponse);
   }
 

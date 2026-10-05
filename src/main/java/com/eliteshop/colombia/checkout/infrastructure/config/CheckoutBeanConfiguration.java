@@ -2,6 +2,7 @@ package com.eliteshop.colombia.checkout.infrastructure.config;
 
 import com.eliteshop.colombia.cart.domain.repository.CartRepository;
 import com.eliteshop.colombia.checkout.application.CheckoutUseCase;
+import com.eliteshop.colombia.checkout.application.OrderPersister;
 import com.eliteshop.colombia.customer.domain.repository.CustomerRepository;
 import com.eliteshop.colombia.order.application.OrderUpdateUseCase;
 import com.eliteshop.colombia.order.domain.repository.OrderItemRepository;
@@ -19,6 +20,20 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class CheckoutBeanConfiguration {
 
+  /**
+   * Bean separado para que {@code @Transactional} de {@link OrderPersister} pase por el proxy de
+   * Spring; si el método viviera en CheckoutUseCase la transacción no se abriría (self-invocation).
+   */
+  @Bean
+  public OrderPersister orderPersister(
+      OrderRepository orderRepository,
+      OrderItemRepository orderItemRepository,
+      ProductRepository productRepository,
+      PaymentRepository paymentRepository) {
+    return new OrderPersister(
+        orderRepository, orderItemRepository, productRepository, paymentRepository);
+  }
+
   @Bean
   public CheckoutUseCase checkoutUseCase(
       CartRepository cartRepository,
@@ -32,7 +47,8 @@ public class CheckoutBeanConfiguration {
       OrderUpdateUseCase orderUpdateUseCase,
       ApplicationEventPublisher eventPublisher,
       SellerRepository sellerRepository,
-      LocationValidationService locationValidationService) {
+      LocationValidationService locationValidationService,
+      OrderPersister orderPersister) {
     return new CheckoutUseCase(
         cartRepository,
         productRepository,
@@ -45,6 +61,7 @@ public class CheckoutBeanConfiguration {
         orderUpdateUseCase,
         eventPublisher,
         sellerRepository,
-        locationValidationService);
+        locationValidationService,
+        orderPersister);
   }
 }

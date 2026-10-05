@@ -21,12 +21,36 @@ public class ReviewPostgresAdapter implements ReviewRepository {
 
   private final ReviewJpaRepository jpaRepository;
   private final ReviewMapper mapper;
+  private final com.eliteshop.colombia.review.domain.repository.ReviewImageRepository
+      reviewImageRepository;
 
   @Override
   public Review save(Review review) {
     ReviewEntity entity = mapper.toEntity(review);
     ReviewEntity savedEntity = jpaRepository.save(entity);
-    return mapper.toDomain(savedEntity);
+    return withImages(mapper.toDomain(savedEntity));
+  }
+
+  /**
+   * Completa la reseña con sus imágenes. El mapper las dejaba siempre vacías, por lo
+   * que `GET /reviews` devolvía `images: []` aunque se hubieran subido.
+   */
+  private Review withImages(Review review) {
+    if (review == null) {
+      return null;
+    }
+    List<com.eliteshop.colombia.review.domain.model.ReviewImage> images =
+        reviewImageRepository.findByReviewId(review.getId());
+    if (images == null || images.isEmpty()) {
+      return review;
+    }
+    return new Review(
+        review.getId(),
+        review.getProductId(),
+        review.getCustomerId(),
+        review.getQualify(),
+        review.getContent(),
+        images);
   }
 
   @Override
@@ -36,23 +60,27 @@ public class ReviewPostgresAdapter implements ReviewRepository {
 
   @Override
   public List<Review> findAll() {
-    return jpaRepository.findAll().stream().map(mapper::toDomain).collect(Collectors.toList());
+    return jpaRepository.findAll().stream()
+        .map(mapper::toDomain)
+        .map(this::withImages)
+        .collect(Collectors.toList());
   }
 
   @Override
   public Page<Review> findAll(Pageable pageable) {
-    return jpaRepository.findAll(pageable).map(mapper::toDomain);
+    return jpaRepository.findAll(pageable).map(mapper::toDomain).map(this::withImages);
   }
 
   @Override
   public Optional<Review> findById(ReviewId id) {
-    return jpaRepository.findById(id.getValue()).map(mapper::toDomain);
+    return jpaRepository.findById(id.getValue()).map(mapper::toDomain).map(this::withImages);
   }
 
   @Override
   public List<Review> findByProductId(ReviewProductId productId) {
     return jpaRepository.findByProductId(productId.getValue()).stream()
         .map(mapper::toDomain)
+        .map(this::withImages)
         .collect(Collectors.toList());
   }
 }

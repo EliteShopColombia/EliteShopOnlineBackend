@@ -57,6 +57,8 @@ class CheckoutUseCaseTest {
   @Mock
   private com.eliteshop.colombia.shared.domain.LocationValidationService locationValidationService;
 
+  @Mock private com.eliteshop.colombia.checkout.application.OrderPersister orderPersister;
+
   private CheckoutUseCase checkoutUseCase;
 
   private final UUID customerId = UUID.randomUUID();
@@ -78,7 +80,8 @@ class CheckoutUseCaseTest {
             orderUpdateUseCase,
             eventPublisher,
             sellerRepository,
-            locationValidationService);
+            locationValidationService,
+            orderPersister);
   }
 
   @Test
@@ -207,8 +210,9 @@ class CheckoutUseCaseTest {
             null,
             null,
             null);
-    when(orderRepository.save(any())).thenReturn(savedOrder);
-    when(orderItemRepository.saveAll(any())).thenReturn(List.of());
+    // La persistencia real vive ahora en OrderPersister (bean aparte, para que
+    // @Transactional sea efectivo), así que aquí se mockea y se le da la orden.
+    when(orderPersister.persistOrderAndItems(any(), any(), any(), any())).thenReturn(savedOrder);
 
     CheckoutUseCase.CheckoutRequestFields fields = buildNewCardRequestFields();
     CheckoutUseCase.CheckoutResult result = checkoutUseCase.execute(customerId, fields);

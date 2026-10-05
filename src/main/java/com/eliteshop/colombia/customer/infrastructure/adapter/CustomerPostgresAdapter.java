@@ -37,9 +37,11 @@ public class CustomerPostgresAdapter implements CustomerRepository {
     existingEntity.setEmail(customer.getEmail().getValue());
     existingEntity.setPhoneNumber(customer.getPhoneNumber().getValue());
     existingEntity.setPassword(customer.getPassword().getValue());
-    if (customer.getProfileImage() != null) {
-      existingEntity.setProfileImage(customer.getProfileImage().getValue());
-    }
+    // Se asigna siempre (incluso null) para que un borrado de avatar se persista;
+    // antes se ignoraba el null y la clave antigua quedaba en la fila aunque el
+    // objeto ya no existiera en MinIO.
+    existingEntity.setProfileImage(
+        customer.getProfileImage() != null ? customer.getProfileImage().getValue() : null);
     existingEntity.setUpdatedAt(Timestamp.from(Instant.now()));
     if (customer.getInfo() != null && existingEntity.getInfo() != null) {
       existingEntity.getInfo().setDniType(customer.getInfo().getDniType().getValue());

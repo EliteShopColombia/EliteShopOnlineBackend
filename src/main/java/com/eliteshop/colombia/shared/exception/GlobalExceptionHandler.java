@@ -436,6 +436,74 @@ public class GlobalExceptionHandler {
                 "INTERNAL_ERROR"));
   }
 
+  @ExceptionHandler(java.util.NoSuchElementException.class)
+  public ResponseEntity<ErrorResponse> handleNoSuchElement(java.util.NoSuchElementException ex) {
+    log.warn("Recurso no encontrado: {}", ex.getMessage());
+    return ResponseEntity.status(HttpStatus.NOT_FOUND)
+        .body(
+            ErrorResponse.of(
+                HttpStatus.NOT_FOUND.value(),
+                "El recurso solicitado no existe",
+                "RESOURCE_NOT_FOUND"));
+  }
+
+  /**
+   * Violaciones de integridad en base de datos (claves foráneas, uniques). Antes caían en el
+   * handler genérico y devolvían 500; ahora se traducen a 409, que es lo que corresponde.
+   */
+  @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+  public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(
+      org.springframework.dao.DataIntegrityViolationException ex) {
+    log.warn("Violación de integridad de datos: {}", ex.getMostSpecificCause().getMessage());
+    return conflict(
+        "La operación entra en conflicto con datos existentes o relacionados", "DATA_CONFLICT");
+  }
+
+  /** Falta una parte requerida en una petición multipart. */
+  @ExceptionHandler(org.springframework.web.multipart.support.MissingServletRequestPartException.class)
+  public ResponseEntity<ErrorResponse> handleMissingPart(
+      org.springframework.web.multipart.support.MissingServletRequestPartException ex) {
+    log.warn("Falta una parte de la petición multipart: {}", ex.getMessage());
+    return badRequest(
+        "Falta la parte '" + ex.getRequestPartName() + "' en la petición", "MISSING_REQUEST_PART");
+  }
+
+  /** Cuerpo o archivo adjunto por encima del límite configurado. */
+  @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+  public ResponseEntity<ErrorResponse> handleMaxUploadSize(
+      org.springframework.web.multipart.MaxUploadSizeExceededException ex) {
+    log.warn("Archivo demasiado grande: {}", ex.getMessage());
+    return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+        .body(
+            ErrorResponse.of(
+                HttpStatus.PAYLOAD_TOO_LARGE.value(),
+                "El archivo supera el tamaño máximo permitido",
+                "FILE_TOO_LARGE"));
+  }
+
+  /** Parámetro de ruta o query con el tipo equivocado (p. ej. UUID malformado). */
+  @ExceptionHandler(org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class)
+  public ResponseEntity<ErrorResponse> handleTypeMismatch(
+      org.springframework.web.method.annotation.MethodArgumentTypeMismatchException ex) {
+    log.warn("Parámetro con tipo inválido: {}={}", ex.getName(), ex.getValue());
+    return badRequest(
+        "El valor del parámetro '" + ex.getName() + "' tiene un formato inválido",
+        "INVALID_PARAMETER_TYPE");
+  }
+
+  /** Método HTTP no soportado por el endpoint. */
+  @ExceptionHandler(org.springframework.web.HttpRequestMethodNotSupportedException.class)
+  public ResponseEntity<ErrorResponse> handleMethodNotSupported(
+      org.springframework.web.HttpRequestMethodNotSupportedException ex) {
+    log.warn("Método no permitido: {}", ex.getMessage());
+    return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
+        .body(
+            ErrorResponse.of(
+                HttpStatus.METHOD_NOT_ALLOWED.value(),
+                "El método HTTP no está permitido para este recurso",
+                "METHOD_NOT_ALLOWED"));
+  }
+
   private ResponseEntity<ErrorResponse> unauthorized(String message, String code) {
     return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
         .body(ErrorResponse.of(HttpStatus.UNAUTHORIZED.value(), message, code));

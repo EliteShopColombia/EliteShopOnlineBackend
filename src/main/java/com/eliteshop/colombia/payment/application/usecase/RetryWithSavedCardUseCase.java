@@ -58,6 +58,22 @@ public class RetryWithSavedCardUseCase {
                               "Metodo de pago no encontrado: " + paymentMethodId)))
                   .flatMap(
                       method -> {
+                        // El método de pago debe pertenecer al cliente de la orden; de lo
+                        // contrario se cobraría a la tarjeta de otro usuario (IDOR).
+                        if (!method
+                            .getCustomerId()
+                            .getValue()
+                            .equals(order.getCustomerId().getValue())) {
+                          log.warn(
+                              "Intento de usar método de pago ajeno: paymentMethodId={}, orden={}",
+                              paymentMethodId,
+                              orderId);
+                          return Mono.error(
+                              new com.eliteshop.colombia.shared.exception
+                                  .ResourceAccessDeniedException(
+                                  "El método de pago no pertenece al titular de la orden"));
+                        }
+
                         Customer customer =
                             customerRepository
                                 .findById(

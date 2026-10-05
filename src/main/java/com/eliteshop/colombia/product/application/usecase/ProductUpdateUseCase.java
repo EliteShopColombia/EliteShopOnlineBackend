@@ -18,6 +18,18 @@ public class ProductUpdateUseCase {
       throw new ProductNotFoundException("El producto no existe en la plataforma");
     }
 
+    // Unicidad del nombre: antes no se comprobaba en el update, así que renombrar un
+    // producto al nombre de otro violaba la constraint y devolvía 500.
+    repository
+        .findByName(product.getName())
+        .filter(existing -> !existing.getId().equals(product.getId()))
+        .ifPresent(
+            existing -> {
+              throw new com.eliteshop.colombia.product.domain.exception
+                  .ProductAlreadyExistsException(
+                  "Ya existe un producto con el nombre " + product.getName().getValue());
+            });
+
     repository.update(product);
     log.info("Producto actualizado exitosamente con id: {}", product.getId());
   }
