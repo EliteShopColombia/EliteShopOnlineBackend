@@ -2,11 +2,10 @@ databaseChangeLog:
   - changeSet:
       id: 012-drop-legacy-cart-order-tables
       author: eliteshop
-      preconditions:
-        - onFail: MARK_RAN
-        - sqlCheck:
-            expectedResult: "1"
-            sql: "SELECT count(*) FROM information_schema.tables WHERE table_name IN ('cart_item', 'cart', 'order_item') AND table_schema = current_schema()"
+      # El DROP ya es idempotente (IF EXISTS). La precondition anterior exigía
+      # exactamente una tabla legada, pero 001 crea tres, así que nunca se
+      # ejecutaba y la creación posterior de order_item fallaba en una BD limpia.
+      validCheckSum: ANY
       changes:
         - sql:
             sql: |

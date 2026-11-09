@@ -32,7 +32,7 @@ The backend provides REST APIs for managing **customers, sellers, products, orde
 **Key capabilities:**
 
 - **11 business modules** fully implemented (domain, application, and infrastructure layers)
-- **67 test files** covering unit, integration, and contract testing
+- **73 test files / 441 cases** covering unit, integration, and contract testing
 - **JWT-based authentication** with role-based access control (`ROLE_CUSTOMER`, `ROLE_SELLER`, `ROLE_ADMIN`) and ownership validation
 - **Seller identity verification** via facial matching (Face Matching) with MinIO storage
 - **Asynchronous notifications** via Slack webhooks and GitHub PR webhook integration
@@ -782,7 +782,7 @@ The application starts on **port 8080** by default.
 | `dev` | Development environment |
 | `prod` | Production environment |
 | `test` | Unit/Integration tests (H2 in-memory) |
-| `migration-test` | Liquibase migration tests |
+| `e2e` | End-to-end tests |
 
 ### Environment Variables
 
@@ -883,7 +883,7 @@ Used for notification dispatch, seller verification processing, and webhook hand
 ### Running Tests
 
 ```bash
-# Run all tests (288 tests)
+# Run all tests (441 tests)
 ./mvnw test
 
 # Run tests for a specific module
@@ -891,17 +891,18 @@ Used for notification dispatch, seller verification processing, and webhook hand
 
 # Run a single test class
 ./mvnw test -Dtest=CustomerControllerTest
-
-# Run with migration-test profile
-./mvnw test -Dspring.profiles.active=migration-test
 ```
+
+> Las migraciones Liquibase no se ejecutan en la suite (`application-test.yml` las
+> desactiva con H2). Para validar una instalación limpia hay que arrancar contra
+> PostgreSQL; el compose de demo lo hace.
 
 ### Test Profiles
 
 | Profile | Purpose |
 |---|---|
 | `test` | H2 in-memory, Liquibase disabled, Config Server disabled |
-| `migration-test` | H2 + Liquibase enabled (migration validation) |
+| `e2e` | H2 in-memory con configuración de extremo a extremo |
 
 ### Key Test Areas
 

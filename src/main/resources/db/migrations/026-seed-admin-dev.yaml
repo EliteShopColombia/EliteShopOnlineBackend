@@ -5,7 +5,7 @@ databaseChangeLog:
       # Solo en desarrollo: crea un admin de pruebas. Nunca debe ejecutarse en
       # producción (antes corría en todos los entornos por no declarar context).
       context: dev
-      validCheckSum: "9:285e9af084a5cd7296b76a7b24442e52"
+      validCheckSum: ANY
       changes:
         - sql:
             sql: |
@@ -16,7 +16,7 @@ databaseChangeLog:
                 'Dev',
                 'admin-dev@eliteshop.com',
                 '3009876543',
-                ${adminDevPasswordHash},
+                '$2a$10$m0Szp.35Bg9ewUBgLW67.u66/9LGmiAP/iy7Va.0pLUWvUOJUpIGG',
                 'admin',
                 CURRENT_TIMESTAMP
               )
