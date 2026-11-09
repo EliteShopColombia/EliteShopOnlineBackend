@@ -27,7 +27,7 @@ public class GlobalExceptionHandler {
     ErrorResponse response =
         ErrorResponse.builder()
             .status(HttpStatus.BAD_REQUEST.value())
-            .error("Validacion fallida")
+            .error("Validación fallida")
             .code("VALIDATION_FAILED")
             .fieldErrors(fieldErrors)
             .build();
@@ -46,7 +46,7 @@ public class GlobalExceptionHandler {
     ErrorResponse response =
         ErrorResponse.builder()
             .status(HttpStatus.BAD_REQUEST.value())
-            .error("Validacion fallida")
+            .error("Validación fallida")
             .code("VALIDATION_FAILED")
             .fieldErrors(fieldErrors)
             .build();
@@ -64,7 +64,7 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ErrorResponse> handleInvalidCredentials(
       com.eliteshop.colombia.auth.domain.exception.InvalidCredentialsException ex) {
     log.warn("Credenciales invalidas: {}", ex.getMessage());
-    return unauthorized("Credenciales invalidas", "INVALID_CREDENTIALS");
+    return unauthorized("Credenciales inválidas", "INVALID_CREDENTIALS");
   }
 
   @ExceptionHandler(com.eliteshop.colombia.seller.domain.exception.SellerNotFoundException.class)
