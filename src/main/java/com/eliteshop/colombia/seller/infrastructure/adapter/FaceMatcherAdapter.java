@@ -144,6 +144,10 @@ public class FaceMatcherAdapter {
           taskId,
           e.getStatusCode().value(),
           e.getResponseBodyAsString());
+      if (e.getStatusCode().value() == 404) {
+        // La cola del microservicio es en memoria: un reinicio borra las tareas.
+        throw new VerificationTaskNotFoundException(taskId);
+      }
       throw new VerificationSubmitException(
           "Error del microservicio al consultar resultado: " + e.getMessage(), e);
     } catch (VerificationSubmitException e) {
@@ -190,6 +194,11 @@ public class FaceMatcherAdapter {
     /** Anti-spoof score (extraído del nested result). */
     public Double antispoofScore() {
       return result != null ? result.antispoofScore() : null;
+    }
+
+    /** Motivo detallado del resultado (extraído del nested result). */
+    public String reason() {
+      return result != null ? result.reason() : null;
     }
 
     /** Número de cédula detectado por OCR (extraído del nested result). */
@@ -262,6 +271,13 @@ public class FaceMatcherAdapter {
 
     public VerificationSubmitException(String message, Throwable cause) {
       super(message, cause);
+    }
+  }
+
+  /** El microservicio no conoce el task_id (su cola es en memoria y se pierde al reiniciar). */
+  public static class VerificationTaskNotFoundException extends VerificationSubmitException {
+    public VerificationTaskNotFoundException(String taskId) {
+      super("El microservicio no tiene la tarea " + taskId);
     }
   }
 }

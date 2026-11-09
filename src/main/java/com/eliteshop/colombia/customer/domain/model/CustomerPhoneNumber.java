@@ -13,7 +13,7 @@ public class CustomerPhoneNumber {
   public CustomerPhoneNumber(String value) {
     Objects.requireNonNull(value, "Numero de telefono no puede ser null");
     if (value.isBlank()) {
-      throw new IllegalArgumentException("Numero de telefono no puede estar vacio");
+      throw new IllegalArgumentException("El número de teléfono no puede estar vacío");
     }
     String digits = value.replaceAll("[^0-9]", "");
     if (!PHONE_PATTERN.matcher(digits).matches()) {

@@ -37,7 +37,7 @@ public class RefundOrderUseCase {
             .orElseThrow(
                 () -> {
                   log.error("Orden no encontrada con id: {}", orderId);
-                  return new OrderNotFoundException("The order not exist in our platform");
+                  return new OrderNotFoundException("La orden no existe en la plataforma");
                 });
 
     if (order.getStatus() != OrderStatus.DISPUTE) {
@@ -50,7 +50,7 @@ public class RefundOrderUseCase {
     }
 
     if (!order.getCustomerId().getValue().equals(actorId)) {
-      throw new OrderAccessDeniedException("The authenticated user cannot refund this order");
+      throw new OrderAccessDeniedException("El usuario autenticado no puede reembolsar esta orden");
     }
 
     Timestamp updatedAt = new Timestamp(System.currentTimeMillis());

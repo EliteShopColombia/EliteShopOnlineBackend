@@ -15,7 +15,7 @@ public class CustomerSaveUseCase {
         .findById(customer.getId())
         .ifPresent(
             existingCustomer -> {
-              throw new CustomerExistException("This customer already exist in the platform");
+              throw new CustomerExistException("El cliente ya existe en la plataforma");
             });
 
     this.repository.save(customer);

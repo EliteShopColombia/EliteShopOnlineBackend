@@ -143,7 +143,7 @@ public class SellerVerificationController {
 
     if (!"SELFIE_UPLOADED".equals(verification.getStatus().getValue())) {
       throw new com.eliteshop.colombia.seller.domain.exception.SellerVerificationException(
-          "Primero sube la cedula y la selfie");
+          "Primero sube la cédula y la selfie");
     }
 
     runValidationLegacyAsync(sellerId);
@@ -210,10 +210,10 @@ public class SellerVerificationController {
 
   private String validateFile(MultipartFile file) {
     if (file.isEmpty()) {
-      return "El archivo esta vacio";
+      return "El archivo está vacío";
     }
     if (file.getSize() > MAX_SIZE) {
-      return "La imagen excede 5MB";
+      return "La imagen supera los 5 MB";
     }
     String contentType = file.getContentType();
     if (contentType == null || !ALLOWED_TYPES.contains(contentType)) {

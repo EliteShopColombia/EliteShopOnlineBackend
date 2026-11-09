@@ -10,7 +10,7 @@ public class OrderShippingAddress {
   public OrderShippingAddress(String value) {
     Objects.requireNonNull(value, "Direccion de envio no puede ser null");
     if (value.isBlank()) {
-      throw new IllegalArgumentException("Direccion de envio no puede estar vacia");
+      throw new IllegalArgumentException("La dirección de envío no puede estar vacía");
     }
     this.value = value;
   }

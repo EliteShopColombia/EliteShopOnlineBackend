@@ -17,7 +17,7 @@ public class CustomerDeleteUseCase {
 
     if (!repository.findById(id).isPresent()) {
       log.error("Cliente no encontrado con id: {}", id);
-      throw new CustomerNotFoundException("Customer no encontrado con id: " + id);
+      throw new CustomerNotFoundException("Cliente no encontrado con id: " + id);
     }
 
     this.repository.delete(id);

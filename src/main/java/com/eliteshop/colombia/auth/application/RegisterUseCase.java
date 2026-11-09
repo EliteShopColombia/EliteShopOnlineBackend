@@ -31,7 +31,7 @@ public class RegisterUseCase {
         .findByEmail(customer.getEmail().getValue())
         .ifPresent(
             existing -> {
-              throw new CustomerExistException("A customer with this email already exists");
+              throw new CustomerExistException("Ya existe un cliente con este correo");
             });
 
     Customer encoded =

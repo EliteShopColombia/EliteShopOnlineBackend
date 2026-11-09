@@ -23,7 +23,7 @@ public class OrderSaveUseCase {
         .ifPresent(
             existingOrder -> {
               log.error("Ya existe una orden con id: {}", order.getId());
-              throw new OrderAlreadyExistsException("This order already exist in the platform");
+              throw new OrderAlreadyExistsException("La orden ya existe en la plataforma");
             });
 
     this.repository.save(order);

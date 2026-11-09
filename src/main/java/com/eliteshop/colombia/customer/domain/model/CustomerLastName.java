@@ -8,9 +8,9 @@ public class CustomerLastName {
   private final String value;
 
   public CustomerLastName(String value) {
-    Objects.requireNonNull(value, "Apellido no puede ser null");
+    Objects.requireNonNull(value, "El apellido no puede ser nulo");
     if (value.isBlank()) {
-      throw new IllegalArgumentException("Apellido no puede estar vacio");
+      throw new IllegalArgumentException("El apellido no puede estar vacío");
     }
     this.value = value;
   }

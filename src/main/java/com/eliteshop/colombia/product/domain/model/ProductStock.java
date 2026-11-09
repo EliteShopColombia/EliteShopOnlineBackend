@@ -8,7 +8,7 @@ public class ProductStock {
 
   public ProductStock(int value) {
     if (value < 0) {
-      throw new IllegalArgumentException("Stock no puede ser negativo: " + value);
+      throw new IllegalArgumentException("El stock no puede ser negativo: " + value);
     }
     this.value = value;
   }

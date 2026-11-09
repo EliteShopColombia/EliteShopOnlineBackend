@@ -218,10 +218,10 @@ public class CustomerController {
 
   private String validateAvatarFile(MultipartFile file) {
     if (file.isEmpty()) {
-      return "El archivo esta vacio";
+      return "El archivo está vacío";
     }
     if (file.getSize() > MAX_AVATAR_SIZE) {
-      return "La imagen excede 5MB";
+      return "La imagen supera los 5 MB";
     }
     String contentType = file.getContentType();
     if (contentType == null || !ALLOWED_AVATAR_TYPES.contains(contentType)) {

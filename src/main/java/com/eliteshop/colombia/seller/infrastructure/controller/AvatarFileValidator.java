@@ -12,10 +12,10 @@ public class AvatarFileValidator {
 
   public void validate(MultipartFile file) {
     if (file.isEmpty()) {
-      throw new IllegalArgumentException("El archivo esta vacio");
+      throw new IllegalArgumentException("El archivo está vacío");
     }
     if (file.getSize() > MAX_SIZE) {
-      throw new IllegalArgumentException("La imagen excede 5MB");
+      throw new IllegalArgumentException("La imagen supera los 5 MB");
     }
     String contentType = file.getContentType();
     if (contentType == null || !ALLOWED_TYPES.contains(contentType)) {

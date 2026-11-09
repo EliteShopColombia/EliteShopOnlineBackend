@@ -54,7 +54,7 @@ class OrderDeleteUseCaseTest {
 
     assertThatThrownBy(() -> useCase.execute(id))
         .isInstanceOf(OrderNotFoundException.class)
-        .hasMessage("The order not exist in our platform");
+        .hasMessage("La orden no existe en la plataforma");
 
     verify(repository, never()).delete(id);
   }

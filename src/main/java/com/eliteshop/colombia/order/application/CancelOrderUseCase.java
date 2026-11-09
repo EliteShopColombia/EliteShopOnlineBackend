@@ -39,7 +39,7 @@ public class CancelOrderUseCase {
             .orElseThrow(
                 () -> {
                   log.error("Orden no encontrada con id: {}", orderId);
-                  return new OrderNotFoundException("The order not exist in our platform");
+                  return new OrderNotFoundException("La orden no existe en la plataforma");
                 });
 
     OrderStatus currentStatus = order.getStatus();

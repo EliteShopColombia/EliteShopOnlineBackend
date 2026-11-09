@@ -67,10 +67,10 @@ public class VerifySellerUseCase {
             .orElseThrow(
                 () -> {
                   log.error(
-                      "No existe verificación pendiente para sellerId={}, suba la cedula primero",
+                      "No existe verificación pendiente para sellerId={}, suba la cédula primero",
                       sellerId);
                   return new com.eliteshop.colombia.seller.domain.exception
-                      .SellerVerificationException("Sube la cedula primero");
+                      .SellerVerificationException("Sube la cédula primero");
                 });
 
     verification = verification.withSelfieUploaded(new SellerVerificationSelfieMinioKey(objectKey));
@@ -104,7 +104,7 @@ public class VerifySellerUseCase {
           sellerId,
           verification.getStatus().getValue());
       throw new com.eliteshop.colombia.seller.domain.exception.SellerVerificationException(
-          "Primero sube la cedula y la selfie");
+          "Primero sube la cédula y la selfie");
     }
 
     String selfieObject =
@@ -167,8 +167,12 @@ public class VerifySellerUseCase {
           "No hay tarea de verificación encolada para este vendedor");
     }
 
-    FaceMatcherAdapter.VerificationResult result =
-        faceMatcherAdapter.getVerificationResult(verification.getTaskId().getValue());
+    FaceMatcherAdapter.VerificationResult result;
+    try {
+      result = faceMatcherAdapter.getVerificationResult(verification.getTaskId().getValue());
+    } catch (FaceMatcherAdapter.VerificationTaskNotFoundException e) {
+      return resubmitLostTask(verification, sellerId);
+    }
 
     String remoteStatus = result.status();
     if (remoteStatus == null) {
@@ -181,10 +185,48 @@ public class VerifySellerUseCase {
       case "approved" -> handleApproved(verification, result);
       case "rejected" -> handleRejected(verification, result);
       case "queued", "processing" -> handlePending(verification, remoteStatus);
+      case "error" -> handleMicroserviceError(verification, result);
       default ->
           throw new com.eliteshop.colombia.seller.domain.exception.SellerVerificationException(
               "Estado desconocido del microservicio: " + remoteStatus);
     };
+  }
+
+  /**
+   * El microservicio falló al procesar la tarea (por ejemplo, una excepción interna). Se marca
+   * como rechazada con un motivo explícito para que el vendedor pueda reintentar, en vez de
+   * dejarlo bloqueado en PROCESSING.
+   */
+  private SellerVerification handleMicroserviceError(
+      SellerVerification verification, FaceMatcherAdapter.VerificationResult result) {
+    UUID sellerId = verification.getSellerId().getValue();
+    String detalle =
+        result.message() != null && !result.message().isBlank()
+            ? result.message()
+            : "error desconocido";
+
+    String reason =
+        "No se pudo completar la verificación por un fallo del servicio de identidad. "
+            + "Vuelve a intentarlo en unos minutos. (" + detalle + ")";
+
+    SellerVerification saved =
+        repository.save(
+            verification.rejected(
+                new SellerVerificationConfidenceScore(
+                    result.confidence() != null ? result.confidence() : 0.0),
+                new SellerVerificationRejectionReason(reason)));
+
+    eventPublisher.publishEvent(
+        new SellerVerificationCompletedEvent(
+            sellerId, false, 0.0, reason, Instant.now()));
+
+    log.error(
+        "Verificación con error del microservicio para sellerId={}, taskId={}: {}",
+        sellerId,
+        verification.getTaskId() != null ? verification.getTaskId().getValue() : "N/A",
+        detalle);
+
+    return saved;
   }
 
   /**
@@ -281,7 +323,7 @@ public class VerifySellerUseCase {
           sellerId,
           verification.getStatus().getValue());
       throw new com.eliteshop.colombia.seller.domain.exception.SellerVerificationException(
-          "Primero sube la cedula y la selfie");
+          "Primero sube la cédula y la selfie");
     }
 
     String selfieObject = verification.getSelfieMinioKey().getValue();
@@ -328,6 +370,41 @@ public class VerifySellerUseCase {
   }
 
   // ==================== Private helpers ====================
+
+  /**
+   * El microservicio guarda la cola en memoria: si se reinicia, la tarea desaparece y el vendedor
+   * quedaría bloqueado en PROCESSING para siempre. Reenviamos la verificación con los objetos que
+   * ya están en MinIO para que el flujo se recupere solo.
+   */
+  private SellerVerification resubmitLostTask(SellerVerification verification, UUID sellerId) {
+    String selfieObject =
+        verification.getSelfieMinioKey() != null
+            ? verification.getSelfieMinioKey().getValue()
+            : null;
+    String documentObject =
+        verification.getDocumentMinioKey() != null
+            ? verification.getDocumentMinioKey().getValue()
+            : null;
+
+    if (selfieObject == null || documentObject == null) {
+      log.error("Tarea perdida y sin imágenes para sellerId={}", sellerId);
+      throw new com.eliteshop.colombia.seller.domain.exception.SellerVerificationException(
+          "La verificación anterior se perdió. Sube la cédula y la selfie nuevamente.");
+    }
+
+    log.warn(
+        "Tarea {} no existe en el microservicio; reenviando verificación para sellerId={}",
+        verification.getTaskId() != null ? verification.getTaskId().getValue() : "N/A",
+        sellerId);
+
+    String newTaskId =
+        faceMatcherAdapter.submitVerification(selfieObject, documentObject, sellerId.toString());
+    SellerVerification saved =
+        repository.save(verification.withProcessing(new SellerVerificationTaskId(newTaskId)));
+
+    log.info("Verificación reenviada para sellerId={}, nuevo taskId={}", sellerId, newTaskId);
+    return saved;
+  }
 
   private SellerVerification handleApproved(
       SellerVerification verification, FaceMatcherAdapter.VerificationResult result) {
@@ -380,12 +457,20 @@ public class VerifySellerUseCase {
       SellerVerification verification, FaceMatcherAdapter.VerificationResult result) {
     UUID sellerId = verification.getSellerId().getValue();
 
+    // El microservicio devuelve un mensaje genérico en «message» y el motivo real en
+    // «result.reason». Guardamos el detallado para que el vendedor sepa qué corregir.
+    String reason =
+        result.reason() != null && !result.reason().isBlank()
+            ? result.reason()
+            : (result.message() != null && !result.message().isBlank()
+                ? result.message()
+                : "Verificación rechazada");
+
     verification =
         verification.rejected(
             new SellerVerificationConfidenceScore(
                 result.confidence() != null ? result.confidence() : 0.0),
-            new SellerVerificationRejectionReason(
-                result.message() != null ? result.message() : "Verificación rechazada"));
+            new SellerVerificationRejectionReason(reason));
 
     // Store detailed metrics even on rejection
     verification =
@@ -412,7 +497,7 @@ public class VerifySellerUseCase {
             sellerId,
             false,
             result.confidence() != null ? result.confidence() : 0.0,
-            result.message() != null ? result.message() : "Verificación rechazada",
+            reason,
             Instant.now()));
 
     log.info(

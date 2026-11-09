@@ -206,6 +206,73 @@ class VerifySellerUseCaseTest {
   }
 
   @Test
+  void pollVerificationResult_shouldRejectWhenMicroserviceReportsError() {
+    String taskId = "task-error";
+    SellerVerification existing = buildVerificationWithTaskId(sellerId, "PROCESSING", taskId);
+
+    when(verificationRepository.findBySellerId(sellerId)).thenReturn(Optional.of(existing));
+    when(faceMatcherAdapter.getVerificationResult(taskId))
+        .thenReturn(
+            new FaceMatcherAdapter.VerificationResult(
+                "error", "⚠️ Error: fallo interno", taskId, sellerId.toString(), null));
+    when(verificationRepository.save(any(SellerVerification.class)))
+        .thenAnswer(inv -> inv.getArgument(0));
+
+    SellerVerification result = useCase.pollVerificationResult(sellerId);
+
+    assertThat(result.getStatus().getValue()).isEqualTo("REJECTED");
+    assertThat(result.getRejectionReason().getValue())
+        .contains("fallo del servicio de identidad")
+        .contains("fallo interno");
+  }
+
+  @Test
+  void pollVerificationResult_shouldResubmitWhenMicroserviceLostTheTask() {
+    String lostTaskId = "task-lost";
+    SellerVerification existing =
+        buildVerificationWithTaskId(sellerId, "PROCESSING", lostTaskId);
+
+    when(verificationRepository.findBySellerId(sellerId)).thenReturn(Optional.of(existing));
+    when(faceMatcherAdapter.getVerificationResult(lostTaskId))
+        .thenThrow(new FaceMatcherAdapter.VerificationTaskNotFoundException(lostTaskId));
+    when(faceMatcherAdapter.submitVerification(anyString(), anyString(), anyString()))
+        .thenReturn("task-new");
+    when(verificationRepository.save(any(SellerVerification.class)))
+        .thenAnswer(inv -> inv.getArgument(0));
+
+    SellerVerification result = useCase.pollVerificationResult(sellerId);
+
+    assertThat(result.getStatus().getValue()).isEqualTo("PROCESSING");
+    assertThat(result.getTaskId().getValue()).isEqualTo("task-new");
+    verify(faceMatcherAdapter).submitVerification(anyString(), anyString(), anyString());
+  }
+
+  @Test
+  void pollVerificationResult_shouldPreferDetailedReasonOverGenericMessage() {
+    String taskId = "task-detail";
+    SellerVerification existing = buildVerificationWithTaskId(sellerId, "PROCESSING", taskId);
+    String detalle = "Liveness rechazado: No se detectó cara en la imagen";
+
+    when(verificationRepository.findBySellerId(sellerId)).thenReturn(Optional.of(existing));
+    when(faceMatcherAdapter.getVerificationResult(taskId))
+        .thenReturn(
+            new FaceMatcherAdapter.VerificationResult(
+                "rejected",
+                "❌ Verificación rechazada",
+                taskId,
+                sellerId.toString(),
+                new FaceMatcherAdapter.VerificationResultDetail(
+                    0.10, 0.05, 0.20, false, null, null, null, false, detalle)));
+    when(verificationRepository.save(any(SellerVerification.class)))
+        .thenAnswer(inv -> inv.getArgument(0));
+
+    SellerVerification result = useCase.pollVerificationResult(sellerId);
+
+    assertThat(result.getStatus().getValue()).isEqualTo("REJECTED");
+    assertThat(result.getRejectionReason().getValue()).isEqualTo(detalle);
+  }
+
+  @Test
   void pollVerificationResult_shouldRejectAndStoreMetrics() {
     String taskId = "task-456";
     SellerVerification existing = buildVerificationWithTaskId(sellerId, "PROCESSING", taskId);

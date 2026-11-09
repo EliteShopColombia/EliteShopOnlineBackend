@@ -10,7 +10,7 @@ public class ProductName {
   public ProductName(String value) {
     Objects.requireNonNull(value, "Nombre del producto no puede ser null");
     if (value.isBlank()) {
-      throw new IllegalArgumentException("Nombre del producto no puede estar vacio");
+      throw new IllegalArgumentException("El nombre del producto no puede estar vacío");
     }
     this.value = value;
   }

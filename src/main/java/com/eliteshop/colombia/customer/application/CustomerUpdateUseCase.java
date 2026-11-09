@@ -17,7 +17,7 @@ public class CustomerUpdateUseCase {
 
     if (customer.getId() == null || repository.findById(customer.getId()).isEmpty()) {
       log.error("Cliente no encontrado para actualización con id: {}", customer.getId());
-      throw new CustomerNotFoundException("Customer no encontrado con id: " + customer.getId());
+      throw new CustomerNotFoundException("Cliente no encontrado con id: " + customer.getId());
     }
 
     this.repository.update(customer);

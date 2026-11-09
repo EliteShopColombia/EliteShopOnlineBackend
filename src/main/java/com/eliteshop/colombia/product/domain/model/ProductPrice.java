@@ -11,7 +11,7 @@ public class ProductPrice {
   public ProductPrice(BigDecimal value) {
     Objects.requireNonNull(value, "Precio no puede ser null");
     if (value.compareTo(BigDecimal.ZERO) <= 0) {
-      throw new IllegalArgumentException("Precio debe ser mayor a cero: " + value);
+      throw new IllegalArgumentException("El precio debe ser mayor que cero: " + value);
     }
     this.value = value;
   }

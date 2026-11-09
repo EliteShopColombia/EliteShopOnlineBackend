@@ -9,6 +9,6 @@ import lombok.Setter;
 @Setter
 public class DisputeRequest {
 
-  @NotNull(message = "Dispute reason is required")
+  @NotNull(message = "El motivo de la disputa es requerido")
   private DisputeReason reason;
 }

@@ -48,7 +48,7 @@ public class OrderUpdateUseCase {
 
     if (order.getId() == null || repository.findById(order.getId()).isEmpty()) {
       log.error("Orden no encontrada con id: {}", order.getId());
-      throw new OrderNotFoundException("The order not exist in our platform");
+      throw new OrderNotFoundException("La orden no existe en la plataforma");
     }
 
     Order existingOrder = repository.findById(order.getId()).orElseThrow();

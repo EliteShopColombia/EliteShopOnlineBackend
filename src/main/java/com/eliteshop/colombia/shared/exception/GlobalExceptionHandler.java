@@ -420,15 +420,15 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ErrorResponse> handleHttpMessageNotReadable(
       HttpMessageNotReadableException ex) {
     log.warn("Cuerpo de solicitud invalido: {}", ex.getMessage());
-    String message = "El cuerpo de la solicitud es invalido o tiene campos con formato incorrecto";
+    String message = "El cuerpo de la solicitud es inválido o tiene campos con formato incorrecto";
     if (ex.getCause() != null && ex.getCause().getMessage() != null) {
       String cause = ex.getCause().getMessage();
       if (cause.contains("UUID")) {
-        message = "El valor de un campo UUID tiene formato invalido";
+        message = "El valor de un campo UUID tiene formato inválido";
       } else if (cause.contains("enum")) {
         message = "El valor de un campo enumeracion no es valido";
       } else if (cause.contains("Instant") || cause.contains("LocalDate")) {
-        message = "El valor de un campo de fecha tiene formato invalido";
+        message = "El valor de un campo de fecha tiene formato inválido";
       }
     }
     return badRequest(message, "INVALID_REQUEST_BODY");

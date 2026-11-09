@@ -10,19 +10,19 @@ import lombok.Setter;
 @Setter
 public class OrderRequest {
 
-  @NotNull(message = "Customer ID is required")
+  @NotNull(message = "El ID del cliente es requerido")
   private UUID customerId;
 
-  @NotNull(message = "Total amount is required")
+  @NotNull(message = "El monto total es requerido")
   private BigDecimal totalAmount;
 
-  @NotNull(message = "Shipping address is required")
+  @NotNull(message = "La dirección de envío es requerida")
   private String shippingAddress;
 
-  @NotNull(message = "Shipping department is required")
+  @NotNull(message = "El departamento de envío es requerido")
   private String shippingDepartment;
 
-  @NotNull(message = "Shipping city is required")
+  @NotNull(message = "La ciudad de envío es requerida")
   private String shippingCity;
 
   private String status;

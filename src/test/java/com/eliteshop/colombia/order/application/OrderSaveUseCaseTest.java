@@ -75,7 +75,7 @@ class OrderSaveUseCaseTest {
 
     assertThatThrownBy(() -> useCase.execute(order))
         .isInstanceOf(OrderAlreadyExistsException.class)
-        .hasMessage("This order already exist in the platform");
+        .hasMessage("La orden ya existe en la plataforma");
 
     verify(repository, never()).save(any());
     verify(eventPublisher, never()).publishEvent(any());

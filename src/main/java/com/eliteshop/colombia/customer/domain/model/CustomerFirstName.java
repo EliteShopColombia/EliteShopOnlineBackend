@@ -10,7 +10,7 @@ public class CustomerFirstName {
   public CustomerFirstName(String value) {
     Objects.requireNonNull(value, "Nombre no puede ser null");
     if (value.isBlank()) {
-      throw new IllegalArgumentException("Nombre no puede estar vacio");
+      throw new IllegalArgumentException("El nombre no puede estar vacío");
     }
     this.value = value;
   }

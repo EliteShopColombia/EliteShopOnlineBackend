@@ -99,7 +99,7 @@ class OrderUpdateUseCaseTest {
 
     assertThatThrownBy(() -> useCase.execute(order))
         .isInstanceOf(OrderNotFoundException.class)
-        .hasMessage("The order not exist in our platform");
+        .hasMessage("La orden no existe en la plataforma");
 
     verify(repository, never()).updateStatusIfCurrent(any(), any(), any(), any());
   }

@@ -17,7 +17,7 @@ public class OrderDeleteUseCase {
 
     if (!repository.findById(id).isPresent()) {
       log.error("Orden no encontrada con id: {}", id);
-      throw new OrderNotFoundException("The order not exist in our platform");
+      throw new OrderNotFoundException("La orden no existe en la plataforma");
     }
 
     this.repository.delete(id);

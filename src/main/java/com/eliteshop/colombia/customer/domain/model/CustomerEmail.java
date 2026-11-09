@@ -13,10 +13,10 @@ public class CustomerEmail {
   public CustomerEmail(String value) {
     Objects.requireNonNull(value, "Email no puede ser null");
     if (value.isBlank()) {
-      throw new IllegalArgumentException("Email no puede estar vacio");
+      throw new IllegalArgumentException("El email no puede estar vacío");
     }
     if (!EMAIL_PATTERN.matcher(value).matches()) {
-      throw new IllegalArgumentException("Email no tiene formato valido: " + value);
+      throw new IllegalArgumentException("El email no tiene un formato válido: " + value);
     }
     this.value = value;
   }

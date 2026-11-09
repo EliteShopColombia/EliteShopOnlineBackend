@@ -26,7 +26,7 @@ public class AddTrackingEventUseCase {
 
     if (orderRepository.findById(orderId).isEmpty()) {
       log.error("Orden no encontrada con id: {}", orderId);
-      throw new OrderNotFoundException("The order not exist in our platform");
+      throw new OrderNotFoundException("La orden no existe en la plataforma");
     }
 
     TrackingEvent event =

@@ -10,13 +10,13 @@ import lombok.Setter;
 @Setter
 public class TrackingEventRequest {
 
-  @NotBlank(message = "Status is required")
+  @NotBlank(message = "El estado es requerido")
   private String status;
 
   private String location;
 
   private String description;
 
-  @NotNull(message = "Event timestamp is required")
+  @NotNull(message = "La marca de tiempo del evento es requerida")
   private Timestamp eventTimestamp;
 }

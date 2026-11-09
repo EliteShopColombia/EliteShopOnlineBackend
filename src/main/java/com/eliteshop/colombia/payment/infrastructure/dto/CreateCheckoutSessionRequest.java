@@ -12,7 +12,7 @@ public class CreateCheckoutSessionRequest {
   @NotNull(message = "El orderId es requerido")
   private UUID orderId;
 
-  @NotNull(message = "El amount es requerido")
+  @NotNull(message = "El monto es requerido")
   private BigDecimal amount;
 
   private String customerEmail;

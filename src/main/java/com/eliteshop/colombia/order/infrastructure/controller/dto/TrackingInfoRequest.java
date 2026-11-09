@@ -8,10 +8,10 @@ import lombok.Setter;
 @Setter
 public class TrackingInfoRequest {
 
-  @NotBlank(message = "Tracking number is required")
+  @NotBlank(message = "El número de guía es requerido")
   private String trackingNumber;
 
-  @NotBlank(message = "Shipping carrier is required")
+  @NotBlank(message = "La transportadora es requerida")
   private String shippingCarrier;
 
   private String shippingLabelUrl;

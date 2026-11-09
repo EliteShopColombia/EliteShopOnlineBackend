@@ -8,29 +8,29 @@ import lombok.Setter;
 @Setter
 public class UpdateCustomerRequest {
 
-  @Size(min = 1, max = 100, message = "First name must be between 1 and 100 characters")
+  @Size(min = 1, max = 100, message = "El nombre debe tener entre 1 y 100 caracteres")
   private String firstName;
 
-  @Size(min = 1, max = 100, message = "Last name must be between 1 and 100 characters")
+  @Size(min = 1, max = 100, message = "El apellido debe tener entre 1 y 100 caracteres")
   private String lastName;
 
-  @Size(min = 1, max = 20, message = "Phone number must be between 1 and 20 characters")
+  @Size(min = 1, max = 20, message = "El teléfono debe tener entre 1 y 20 caracteres")
   private String phoneNumber;
 
   private String profileImage;
 
-  @Size(min = 1, max = 20, message = "DNI type must be between 1 and 20 characters")
+  @Size(min = 1, max = 20, message = "El tipo de documento debe tener entre 1 y 20 caracteres")
   private String dniType;
 
-  @Size(min = 1, max = 20, message = "DNI number must be between 1 and 20 characters")
+  @Size(min = 1, max = 20, message = "El número de documento debe tener entre 1 y 20 caracteres")
   private String dniNumber;
 
-  @Size(min = 1, max = 150, message = "Address must be between 1 and 150 characters")
+  @Size(min = 1, max = 150, message = "La dirección debe tener entre 1 y 150 caracteres")
   private String address;
 
-  @Size(min = 1, max = 60, message = "Department must be between 1 and 60 characters")
+  @Size(min = 1, max = 60, message = "El departamento debe tener entre 1 y 60 caracteres")
   private String department;
 
-  @Size(min = 1, max = 60, message = "City must be between 1 and 60 characters")
+  @Size(min = 1, max = 60, message = "La ciudad debe tener entre 1 y 60 caracteres")
   private String city;
 }
