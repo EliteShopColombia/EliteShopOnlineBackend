@@ -47,3 +47,5 @@ databaseChangeLog:
       file: db/migrations/028-add-product-category.yaml
   - include:
       file: db/migrations/029-add-verification-details.yaml
+  - include:
+      file: db/migrations/030-add-verification-frames.yaml
