@@ -3,6 +3,7 @@ package com.eliteshop.colombia.seller.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -104,6 +105,34 @@ class VerifySellerUseCaseTest {
   }
 
   @Test
+  void uploadSelfie_shouldStoreFrameKeysWhenBurstIsSent() {
+    SellerVerification existing = buildVerification(sellerId, "DOCUMENT_UPLOADED");
+
+    when(verificationRepository.findBySellerId(sellerId)).thenReturn(Optional.of(existing));
+    when(minIOAdapter.uploadSelfie(eq(sellerId.toString()), anyString(), any(InputStream.class)))
+        .thenReturn("sellers/" + sellerId + "/selfie.jpg");
+    when(minIOAdapter.uploadSelfieFrame(eq(sellerId.toString()), anyInt(), any(InputStream.class)))
+        .thenAnswer(
+            inv -> "sellers/" + sellerId + "/frames/" + inv.getArgument(1) + ".jpg");
+    when(verificationRepository.save(any(SellerVerification.class)))
+        .thenAnswer(inv -> inv.getArgument(0));
+
+    java.util.List<InputStream> frames =
+        java.util.List.of(
+            new ByteArrayInputStream("f1".getBytes()),
+            new ByteArrayInputStream("f2".getBytes()),
+            new ByteArrayInputStream("f3".getBytes()));
+
+    SellerVerification result =
+        useCase.uploadSelfie(sellerId, "selfie.jpg", new ByteArrayInputStream("s".getBytes()), frames);
+
+    assertThat(result.getFramesMinioKeys()).isNotNull();
+    assertThat(result.getFramesMinioKeys().asList()).hasSize(3);
+    assertThat(result.getFramesMinioKeys().asList().get(0)).contains("/frames/0.jpg");
+    verify(minIOAdapter, times(3)).uploadSelfieFrame(anyString(), anyInt(), any(InputStream.class));
+  }
+
+  @Test
   void uploadSelfie_shouldThrowWhenNoPendingVerification() {
     InputStream stream = new ByteArrayInputStream("selfie".getBytes());
 
@@ -122,7 +151,7 @@ class VerifySellerUseCaseTest {
     String expectedTaskId = "task-" + UUID.randomUUID();
 
     when(verificationRepository.findBySellerId(sellerId)).thenReturn(Optional.of(existing));
-    when(faceMatcherAdapter.submitVerification(anyString(), anyString(), eq(sellerId.toString())))
+    when(faceMatcherAdapter.submitVerification(anyString(), anyString(), any(), eq(sellerId.toString())))
         .thenReturn(expectedTaskId);
     when(verificationRepository.save(any(SellerVerification.class)))
         .thenAnswer(inv -> inv.getArgument(0));
@@ -136,6 +165,7 @@ class VerifySellerUseCaseTest {
         .submitVerification(
             eq("sellers/" + sellerId + "/selfie.jpg"),
             eq("sellers/" + sellerId + "/document.jpg"),
+            any(),
             eq(sellerId.toString()));
     verify(verificationRepository).save(any(SellerVerification.class));
   }
@@ -165,7 +195,7 @@ class VerifySellerUseCaseTest {
     SellerVerification existing = buildVerification(sellerId, "SELFIE_UPLOADED");
 
     when(verificationRepository.findBySellerId(sellerId)).thenReturn(Optional.of(existing));
-    when(faceMatcherAdapter.submitVerification(anyString(), anyString(), eq(sellerId.toString())))
+    when(faceMatcherAdapter.submitVerification(anyString(), anyString(), any(), eq(sellerId.toString())))
         .thenThrow(
             new FaceMatcherAdapter.VerificationSubmitException(
                 "Error de comunicación con el microservicio"));
@@ -235,7 +265,7 @@ class VerifySellerUseCaseTest {
     when(verificationRepository.findBySellerId(sellerId)).thenReturn(Optional.of(existing));
     when(faceMatcherAdapter.getVerificationResult(lostTaskId))
         .thenThrow(new FaceMatcherAdapter.VerificationTaskNotFoundException(lostTaskId));
-    when(faceMatcherAdapter.submitVerification(anyString(), anyString(), anyString()))
+    when(faceMatcherAdapter.submitVerification(anyString(), anyString(), any(), anyString()))
         .thenReturn("task-new");
     when(verificationRepository.save(any(SellerVerification.class)))
         .thenAnswer(inv -> inv.getArgument(0));
@@ -244,7 +274,7 @@ class VerifySellerUseCaseTest {
 
     assertThat(result.getStatus().getValue()).isEqualTo("PROCESSING");
     assertThat(result.getTaskId().getValue()).isEqualTo("task-new");
-    verify(faceMatcherAdapter).submitVerification(anyString(), anyString(), anyString());
+    verify(faceMatcherAdapter).submitVerification(anyString(), anyString(), any(), anyString());
   }
 
   @Test
@@ -589,6 +619,7 @@ class VerifySellerUseCaseTest {
         null,
         null,
         null,
+        null,
         null);
   }
 
@@ -608,6 +639,7 @@ class VerifySellerUseCaseTest {
         new SellerVerificationCreatedAt(Instant.now()),
         null,
         new SellerVerificationTaskId(taskId),
+        null,
         null,
         null,
         null,

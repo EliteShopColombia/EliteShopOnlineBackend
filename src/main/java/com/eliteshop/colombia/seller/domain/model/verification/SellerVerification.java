@@ -26,6 +26,8 @@ public class SellerVerification {
   private final SellerVerificationAntispoofScore antispoofScore;
   private final SellerVerificationOcrCedulaNumber ocrCedulaNumber;
   private final SellerVerificationOcrCedulaName ocrCedulaName;
+  // Frames de la ráfaga para el análisis temporal de liveness
+  private final SellerVerificationFramesMinioKeys framesMinioKeys;
 
   public static SellerVerification create(SellerVerificationSellerId sellerId) {
     return new SellerVerification(
@@ -40,6 +42,7 @@ public class SellerVerification {
         null,
         null,
         new SellerVerificationCreatedAt(Instant.now()),
+        null,
         null,
         null,
         null,
@@ -68,10 +71,22 @@ public class SellerVerification {
         this.livenessConfidence,
         this.antispoofScore,
         this.ocrCedulaNumber,
-        this.ocrCedulaName);
+        this.ocrCedulaName,
+        this.framesMinioKeys);
   }
 
   public SellerVerification withSelfieUploaded(SellerVerificationSelfieMinioKey selfieMinioKey) {
+    return withSelfieUploaded(selfieMinioKey, null);
+  }
+
+  /**
+   * Registra la selfie y, si el cliente envió una ráfaga, los frames para el análisis temporal de
+   * liveness. Con frames el microservicio puede detectar parpadeo y movimiento de cabeza; sin
+   * ellos solo analiza la textura de la piel.
+   */
+  public SellerVerification withSelfieUploaded(
+      SellerVerificationSelfieMinioKey selfieMinioKey,
+      SellerVerificationFramesMinioKeys framesMinioKeys) {
     return new SellerVerification(
         this.id,
         this.sellerId,
@@ -89,7 +104,8 @@ public class SellerVerification {
         this.livenessConfidence,
         this.antispoofScore,
         this.ocrCedulaNumber,
-        this.ocrCedulaName);
+        this.ocrCedulaName,
+        framesMinioKeys);
   }
 
   /**
@@ -113,7 +129,8 @@ public class SellerVerification {
         this.livenessConfidence,
         this.antispoofScore,
         this.ocrCedulaNumber,
-        this.ocrCedulaName);
+        this.ocrCedulaName,
+        this.framesMinioKeys);
   }
 
   public SellerVerification approved(SellerVerificationConfidenceScore confidenceScore) {
@@ -134,7 +151,8 @@ public class SellerVerification {
         this.livenessConfidence,
         this.antispoofScore,
         this.ocrCedulaNumber,
-        this.ocrCedulaName);
+        this.ocrCedulaName,
+        this.framesMinioKeys);
   }
 
   public SellerVerification rejected(
@@ -157,7 +175,8 @@ public class SellerVerification {
         this.livenessConfidence,
         this.antispoofScore,
         this.ocrCedulaNumber,
-        this.ocrCedulaName);
+        this.ocrCedulaName,
+        this.framesMinioKeys);
   }
 
   /**
@@ -187,6 +206,7 @@ public class SellerVerification {
         livenessConfidence,
         antispoofScore,
         ocrCedulaNumber,
-        ocrCedulaName);
+        ocrCedulaName,
+        this.framesMinioKeys);
   }
 }

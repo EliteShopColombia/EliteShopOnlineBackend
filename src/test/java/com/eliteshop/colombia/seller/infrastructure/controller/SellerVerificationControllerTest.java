@@ -250,6 +250,7 @@ class SellerVerificationControllerTest {
         null,
         null,
         null,
+        null,
         null);
   }
 }

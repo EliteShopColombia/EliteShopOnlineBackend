@@ -60,6 +60,7 @@ public class SellerVerificationController {
   public ResponseEntity<?> uploadSelfie(
       @PathVariable UUID sellerId,
       @RequestParam("file") MultipartFile file,
+      @RequestParam(value = "frames", required = false) java.util.List<MultipartFile> frames,
       Authentication authentication,
       jakarta.servlet.http.HttpServletRequest request) {
     requireSellerAccess(sellerId, authentication, request);
@@ -67,12 +68,26 @@ public class SellerVerificationController {
     if (validationError != null) {
       return ResponseEntity.badRequest().body(validationError);
     }
+    for (MultipartFile frame : frames == null ? java.util.List.<MultipartFile>of() : frames) {
+      String frameError = validateFile(frame);
+      if (frameError != null) {
+        return ResponseEntity.badRequest().body("Frame inválido: " + frameError);
+      }
+    }
     try {
       InputStream stream = file.getInputStream();
+      java.util.List<InputStream> frameStreams = new java.util.ArrayList<>();
+      if (frames != null) {
+        for (MultipartFile frame : frames) {
+          frameStreams.add(frame.getInputStream());
+        }
+      }
       SellerVerification verification =
-          verifySellerUseCase.uploadSelfie(sellerId, file.getOriginalFilename(), stream);
+          verifySellerUseCase.uploadSelfie(
+              sellerId, file.getOriginalFilename(), stream, frameStreams);
       return ResponseEntity.ok(mapper.toResponse(verification));
     } catch (Exception e) {
+      log.error("Error subiendo la selfie para sellerId={}: {}", sellerId, e.getMessage());
       return ResponseEntity.badRequest().body("Error subiendo el archivo");
     }
   }

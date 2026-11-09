@@ -67,4 +67,8 @@ public class SellerVerificationEntity {
 
   @Column(name = "ocr_cedula_name", length = 200)
   private String ocrCedulaName;
+
+  // Frames de la ráfaga para el análisis temporal de liveness (migration 030)
+  @Column(name = "frames_minio_keys", columnDefinition = "TEXT")
+  private String framesMinioKeys;
 }

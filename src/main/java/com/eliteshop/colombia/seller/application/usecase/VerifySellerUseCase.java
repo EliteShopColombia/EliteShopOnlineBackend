@@ -58,7 +58,20 @@ public class VerifySellerUseCase {
   }
 
   public SellerVerification uploadSelfie(UUID sellerId, String filename, InputStream stream) {
-    log.info("Subiendo selfie de verificación para vendedor sellerId={}", sellerId);
+    return uploadSelfie(sellerId, filename, stream, java.util.List.of());
+  }
+
+  /**
+   * Registra la selfie y, opcionalmente, una ráfaga de frames. Con frames el microservicio puede
+   * aplicar el análisis temporal de liveness (parpadeo y movimiento); sin ellos solo analiza la
+   * textura de la piel de la imagen.
+   */
+  public SellerVerification uploadSelfie(
+      UUID sellerId, String filename, InputStream stream, java.util.List<InputStream> frames) {
+    log.info(
+        "Subiendo selfie de verificación para vendedor sellerId={} (frames={})",
+        sellerId,
+        frames.size());
     String objectKey = minIOAdapter.uploadSelfie(sellerId.toString(), filename, stream);
 
     SellerVerification verification =
@@ -73,8 +86,19 @@ public class VerifySellerUseCase {
                       .SellerVerificationException("Sube la cédula primero");
                 });
 
-    verification = verification.withSelfieUploaded(new SellerVerificationSelfieMinioKey(objectKey));
-    log.info("Selfie subida exitosamente para vendedor sellerId={}", sellerId);
+    java.util.List<String> frameKeys = new java.util.ArrayList<>();
+    for (int i = 0; i < frames.size(); i++) {
+      frameKeys.add(minIOAdapter.uploadSelfieFrame(sellerId.toString(), i, frames.get(i)));
+    }
+
+    verification =
+        verification.withSelfieUploaded(
+            new SellerVerificationSelfieMinioKey(objectKey),
+            frameKeys.isEmpty() ? null : SellerVerificationFramesMinioKeys.fromList(frameKeys));
+    log.info(
+        "Selfie subida exitosamente para vendedor sellerId={} (frames guardados={})",
+        sellerId,
+        frameKeys.size());
     return repository.save(verification);
   }
 
@@ -133,7 +157,8 @@ public class VerifySellerUseCase {
     }
 
     String taskId =
-        faceMatcherAdapter.submitVerification(selfieObject, documentObject, sellerId.toString());
+        faceMatcherAdapter.submitVerification(
+            selfieObject, documentObject, verification.getFramesMinioKeys(), sellerId.toString());
 
     verification = verification.withProcessing(new SellerVerificationTaskId(taskId));
     SellerVerification savedVerification = repository.save(verification);
@@ -398,7 +423,8 @@ public class VerifySellerUseCase {
         sellerId);
 
     String newTaskId =
-        faceMatcherAdapter.submitVerification(selfieObject, documentObject, sellerId.toString());
+        faceMatcherAdapter.submitVerification(
+            selfieObject, documentObject, verification.getFramesMinioKeys(), sellerId.toString());
     SellerVerification saved =
         repository.save(verification.withProcessing(new SellerVerificationTaskId(newTaskId)));
 

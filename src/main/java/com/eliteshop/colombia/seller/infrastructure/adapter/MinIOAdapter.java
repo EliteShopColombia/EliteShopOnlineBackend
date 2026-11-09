@@ -44,6 +44,24 @@ public class MinIOAdapter {
     return objectKey;
   }
 
+  /**
+   * Sube un frame de la ráfaga de la selfie. Se usa para el análisis temporal de liveness
+   * (parpadeo y movimiento de cabeza) cuando el cliente envía varios frames.
+   */
+  public String uploadSelfieFrame(String sellerId, int index, InputStream stream) {
+    String bucket = bucketResolver.getVerificationSellersBucket();
+    String objectKey = "sellers/" + sellerId + "/frames/" + index + ".jpg";
+    try {
+      minioClient.putObject(
+          PutObjectArgs.builder().bucket(bucket).object(objectKey).stream(stream, -1, 10485760)
+              .contentType("image/jpeg")
+              .build());
+    } catch (Exception e) {
+      throw new StorageException("Error subiendo frame de la selfie a MinIO", e);
+    }
+    return objectKey;
+  }
+
   public InputStream downloadImage(String objectKey) {
     String bucket = bucketResolver.getVerificationSellersBucket();
     try {

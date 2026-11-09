@@ -7,6 +7,7 @@ import com.eliteshop.colombia.seller.domain.model.verification.SellerVerificatio
 import com.eliteshop.colombia.seller.domain.model.verification.SellerVerificationDocumentMinioKey;
 import com.eliteshop.colombia.seller.domain.model.verification.SellerVerificationDocumentNumber;
 import com.eliteshop.colombia.seller.domain.model.verification.SellerVerificationDocumentType;
+import com.eliteshop.colombia.seller.domain.model.verification.SellerVerificationFramesMinioKeys;
 import com.eliteshop.colombia.seller.domain.model.verification.SellerVerificationId;
 import com.eliteshop.colombia.seller.domain.model.verification.SellerVerificationLivenessConfidence;
 import com.eliteshop.colombia.seller.domain.model.verification.SellerVerificationOcrCedulaName;
@@ -62,6 +63,9 @@ public class SellerVerificationMapper {
             : null,
         entity.getOcrCedulaName() != null
             ? new SellerVerificationOcrCedulaName(entity.getOcrCedulaName())
+            : null,
+        entity.getFramesMinioKeys() != null
+            ? new SellerVerificationFramesMinioKeys(entity.getFramesMinioKeys())
             : null);
   }
 
@@ -93,6 +97,8 @@ public class SellerVerificationMapper {
         domain.getOcrCedulaNumber() != null ? domain.getOcrCedulaNumber().getValue() : null);
     entity.setOcrCedulaName(
         domain.getOcrCedulaName() != null ? domain.getOcrCedulaName().getValue() : null);
+    entity.setFramesMinioKeys(
+        domain.getFramesMinioKeys() != null ? domain.getFramesMinioKeys().getValue() : null);
     return entity;
   }
 }

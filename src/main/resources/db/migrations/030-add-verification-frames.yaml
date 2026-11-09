@@ -1,0 +1,12 @@
+databaseChangeLog:
+  - changeSet:
+      id: 030-add-verification-frames
+      author: eliteshop
+      changes:
+        - addColumn:
+            tableName: seller_verification
+            columns:
+              - column:
+                  name: frames_minio_keys
+                  type: TEXT
+                  remarks: "Claves de MinIO de los frames de la ráfaga de la selfie, separadas por coma. Permiten el análisis temporal de liveness (parpadeo y movimiento)"

@@ -65,8 +65,22 @@ public class FaceMatcherAdapter {
    * @throws VerificationSubmitException si la comunicación con el microservicio falla
    */
   public String submitVerification(String selfieObject, String documentObject, String sellerId) {
+    return submitVerification(selfieObject, documentObject, null, sellerId);
+  }
+
+  /**
+   * Envía la tarea incluyendo los frames de la ráfaga, si los hay. Con frames el microservicio
+   * aplica el análisis temporal de liveness; sin ellos analiza solo la textura de la imagen.
+   */
+  public String submitVerification(
+      String selfieObject,
+      String documentObject,
+      com.eliteshop.colombia.seller.domain.model.verification.SellerVerificationFramesMinioKeys
+          frames,
+      String sellerId) {
+    java.util.List<String> framesObjects = frames != null ? frames.asList() : java.util.List.of();
     VerificationSubmitRequest request =
-        new VerificationSubmitRequest(selfieObject, documentObject, sellerId);
+        new VerificationSubmitRequest(selfieObject, documentObject, sellerId, framesObjects);
 
     log.info("Enviando tarea de verificación al microservicio para sellerId={}", sellerId);
 
@@ -165,7 +179,8 @@ public class FaceMatcherAdapter {
   public record VerificationSubmitRequest(
       @JsonProperty("selfie_object") String selfieObject,
       @JsonProperty("cedula_object") String documentObject,
-      @JsonProperty("seller_id") String sellerId) {}
+      @JsonProperty("seller_id") String sellerId,
+      @JsonProperty("frames_objects") java.util.List<String> framesObjects) {}
 
   /** Response del endpoint POST /verify-seller. */
   public record VerificationSubmitResponse(@JsonProperty("task_id") String taskId) {}
