@@ -303,7 +303,7 @@ public class CheckoutUseCase {
     if (!request.isNewCard()) {
       // Saved method: requires CVV
       if (request.cvv == null || request.cvv.isBlank()) {
-        return Mono.error(new CvvRequiredException("El CVV es requerido para metodos guardados"));
+        return Mono.error(new CvvRequiredException("El CVV es requerido para métodos guardados"));
       }
       CustomerPaymentMethod method =
           paymentMethodRepository

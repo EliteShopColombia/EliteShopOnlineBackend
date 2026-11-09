@@ -175,7 +175,7 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ErrorResponse> handleEmptyCart(
       com.eliteshop.colombia.checkout.domain.exception.EmptyCartException ex) {
     log.warn("Carrito vacio: {}", ex.getMessage());
-    return badRequest("El carrito esta vacio", "EMPTY_CART");
+    return badRequest("El carrito está vacío", "EMPTY_CART");
   }
 
   @ExceptionHandler(com.eliteshop.colombia.checkout.domain.exception.CvvRequiredException.class)
@@ -364,16 +364,16 @@ public class GlobalExceptionHandler {
       com.eliteshop.colombia.seller.domain.exception.SellerInvalidTradeNameException.class)
   public ResponseEntity<ErrorResponse> handleSellerInvalidTradeName(
       com.eliteshop.colombia.seller.domain.exception.SellerInvalidTradeNameException ex) {
-    log.warn("Nombre de comercio invalido: {}", ex.getMessage());
-    return badRequest("Nombre de comercio no valido", "SELLER_INVALID_TRADE_NAME");
+    log.warn("Nombre de comercio inválido: {}", ex.getMessage());
+    return badRequest("Nombre de comercio no válido", "SELLER_INVALID_TRADE_NAME");
   }
 
   @ExceptionHandler(
       com.eliteshop.colombia.seller.domain.exception.SellerInvalidFullnameException.class)
   public ResponseEntity<ErrorResponse> handleSellerInvalidFullname(
       com.eliteshop.colombia.seller.domain.exception.SellerInvalidFullnameException ex) {
-    log.warn("Nombre completo invalido: {}", ex.getMessage());
-    return badRequest("Nombre completo no valido", "SELLER_INVALID_FULLNAME");
+    log.warn("Nombre completo inválido: {}", ex.getMessage());
+    return badRequest("Nombre completo no válido", "SELLER_INVALID_FULLNAME");
   }
 
   @ExceptionHandler(
@@ -404,8 +404,8 @@ public class GlobalExceptionHandler {
       com.eliteshop.colombia.seller.domain.exception.SellerInvalidBankNameException.class)
   public ResponseEntity<ErrorResponse> handleSellerInvalidBankName(
       com.eliteshop.colombia.seller.domain.exception.SellerInvalidBankNameException ex) {
-    log.warn("Nombre de banco invalido: {}", ex.getMessage());
-    return badRequest("Nombre de banco no valido", "SELLER_INVALID_BANK_NAME");
+    log.warn("Nombre de banco inválido: {}", ex.getMessage());
+    return badRequest("Nombre de banco no válido", "SELLER_INVALID_BANK_NAME");
   }
 
   @ExceptionHandler(

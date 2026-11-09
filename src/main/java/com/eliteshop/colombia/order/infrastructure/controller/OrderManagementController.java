@@ -116,7 +116,7 @@ public class OrderManagementController {
     UUID authenticatedCustomerId = authHelper.authenticatedUserId(authentication, customerId);
     if (authenticatedCustomerId == null || !authenticatedCustomerId.equals(customerId)) {
       throw new com.eliteshop.colombia.order.domain.exception.OrderAccessDeniedException(
-          "No tienes permisos sobre las ordenes del cliente");
+          "No tienes permisos sobre las órdenes del cliente");
     }
     var result =
         findByCustomerIdUseCase.execute(new OrderCustomerId(authenticatedCustomerId), page, size);

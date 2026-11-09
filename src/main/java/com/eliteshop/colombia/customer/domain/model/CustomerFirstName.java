@@ -8,7 +8,7 @@ public class CustomerFirstName {
   private final String value;
 
   public CustomerFirstName(String value) {
-    Objects.requireNonNull(value, "Nombre no puede ser null");
+    Objects.requireNonNull(value, "El nombre no puede ser nulo");
     if (value.isBlank()) {
       throw new IllegalArgumentException("El nombre no puede estar vacío");
     }
